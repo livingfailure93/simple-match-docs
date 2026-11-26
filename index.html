@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Match - Documentation</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="index.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="quick-start.html">Quick Start</a></li>
+    <li><a href="generating.html">Generating</a></li>
+    <li><a href="api-reference.html">API Reference</a></li>
+    <li><a href="demos.html">Demos</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>Simple Match</h1>
+    <p class="tagline">Match-3 puzzles for Unity that are generated, solved exactly and rated.</p>
+    <p class="sub-tagline">Simple Match builds a match-3 puzzle from your settings, then proves it can be won and works out
+      its <strong>par</strong>, the fewest moves it takes. It makes puzzles to clear, to collect, to peel layers off or to
+      bring exit pieces down, with bonus pieces, crates, moss, countdowns, belts, portals and more, and refill levels where
+      new pieces drop in from a seeded stream. Every puzzle is rated 1 to 5 stars and can be saved as a ScriptableObject,
+      exported as a PNG or SVG picture, or played in the included 3D demo, which can also tell the player when a level
+      can't be won any more.</p>
+    <div class="pill">Version 1.0, by Living Failure</div>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#what">What it is</a></li>
+        <li><a href="#rules">The rules</a></li>
+        <li><a href="#modes">Two kinds of level</a></li>
+        <li><a href="#gimmicks">Bonus pieces and gimmicks</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#verified">Why "verified"</a></li>
+        <li><a href="#start">Getting started</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+
+      <div class="section">
+        <h2 id="what">What it is</h2>
+        <p>Simple Match is a match-3 puzzle generator with a solver built in. The player swaps two pieces side by side to
+          line up three or more of a kind; the line clears, the pieces above fall into the gap, and falling pieces can line
+          up again (a cascade). You choose the board, the goal and what goes on it, and it builds a puzzle for you. Then it
+          searches every position the puzzle can reach, so you know for certain that it can be won and how many moves the
+          best win takes.</p>
+        <p>Everything is deterministic. The same settings and the same seed always give the same puzzle, and every puzzle
+          keeps the settings and seed it was made from. Refill levels draw their new pieces from a seeded stream, so a level
+          plays the same every time and can be proven too. When the generator can't give you exactly what you asked for, it
+          says so in the puzzle's notes instead of quietly handing you something else.</p>
+        <p>In the editor pictures and in the demo every piece type has its own shape as well as its own colour (circle,
+          square, triangle, diamond, hexagon and plus), and every gimmick has a shape of its own, so colour-blind players can
+          tell them all apart.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="rules">The rules</h2>
+        <div class="feature-grid">
+          <div class="feature-card"><h4>Swap two neighbours</h4><p>Swap two pieces that sit side by side (not diagonally).
+            A swap is only allowed when it makes a line (or sets off a type clear or two bonus pieces together); otherwise it
+            doesn't happen, and the rules say why.</p></div>
+          <div class="feature-card"><h4>Lines of three or more</h4><p>Three or more of one type in a row or a column clear
+            together. Lines that touch clear as one group, so an L, a T or a plus is one match.</p></div>
+          <div class="feature-card"><h4>Pieces fall</h4><p>The pieces above an empty cell fall into it, toward row 0 (the
+            bottom). Obstacles, crates and fixed pieces hold up what is above them. Gravity can be turned sideways or up cell
+            by cell, and portals carry a falling piece elsewhere.</p></div>
+          <div class="feature-card"><h4>Cascades</h4><p>Pieces that land in a line clear too, wave after wave, until nothing
+            lines up. The move report records every wave.</p></div>
+          <div class="feature-card"><h4>Goals</h4><p>Clear the board, collect a number of pieces of given shapes, clear
+            every layer, or bring every exit piece down to an exit, within the move limit.</p></div>
+          <div class="feature-card"><h4>Won and lost</h4><p>A move that meets the goal wins. A level is lost when the moves
+            run out, a countdown reaches 0, or no swap is left.</p></div>
+        </div>
+        <div class="callout info"><p>The solver, the generator, the editor pictures and the demo all use the same rules
+          (<span class="k">MatchRules</span>), so they always agree. Every move returns a report: each wave's matches (type,
+          size and shape), the bonus pieces made and fired, the gimmicks hit, the pieces dropped in.</p></div>
+      </div>
+
+      <div class="section">
+        <h2 id="modes">Two kinds of level</h2>
+        <table>
+          <tr><th></th><th>Puzzle mode</th><th>Refill levels</th></tr>
+          <tr><td>New pieces</td><td>none: what is on the board is all there is</td><td>drop in from the top of each fall path
+            (or its spawner), from a seeded stream</td></tr>
+          <tr><td>Goals</td><td>clear the board, collect, clear layers, bring exit pieces down</td><td>collect, clear layers,
+            bring down the exit pieces that drop in</td></tr>
+          <tr><td>Proven</td><td>par by an exact search</td><td>par by an exact search over the seeded stream</td></tr>
+          <tr><td>Stars from</td><td>the exact chance a player swapping at random wins</td><td>how often 400 seeded
+            half-greedy players win</td></tr>
+          <tr><td>No swap left</td><td>the level is lost</td><td>the board reshuffles (if no arrangement works, it is
+            lost)</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="gimmicks">Bonus pieces and gimmicks</h2>
+        <p>Names say what a thing does. Every one is optional, and the generator only keeps one that the puzzle really
+          uses.</p>
+        <table>
+          <tr><th>Name</th><th>What it does</th></tr>
+          <tr><td><strong>Line clear</strong></td><td>Made by four in a line; when cleared it clears its whole row (made by
+            four in a column) or column (four in a row).</td></tr>
+          <tr><td><strong>Pattern clear</strong></td><td>Made by an L, T or plus; clears a pattern round it (3 x 3 by
+            default; paint your own).</td></tr>
+          <tr><td><strong>Type clear</strong></td><td>Made by five in a line; swapped with a piece, clears every piece of that
+            type. Two bonus pieces swapped together set off a combo.</td></tr>
+          <tr><td><strong>Obstacle</strong> / shaped boards</td><td>Cells nothing enters (pieces rest on them), and cells
+            outside a diamond, heart, ring or your own shape.</td></tr>
+          <tr><td><strong>Layered cell</strong></td><td>1 to 3 layers under the piece; each match on the cell takes one off.
+            The goal to clear every layer.</td></tr>
+          <tr><td><strong>Breakable</strong> (a crate)</td><td>Fills its cell; 1 to 3 hits from matches beside it or bonus
+            pieces over it break it.</td></tr>
+          <tr><td><strong>Fixed piece</strong></td><td>Pinned to its cell: it can't be swapped and never falls; only a match
+            clears it.</td></tr>
+          <tr><td><strong>Type filter</strong></td><td>A cell that takes only one shape.</td></tr>
+          <tr><td><strong>Spreading</strong> (moss)</td><td>After a move that clears none of it, it takes a piece beside
+            it.</td></tr>
+          <tr><td><strong>Countdown piece</strong></td><td>Clear it before its number of moves runs out, or the level is
+            lost.</td></tr>
+          <tr><td><strong>Exit piece</strong> / exit cell</td><td>A piece that never matches; bring it down onto an exit and
+            it leaves the board.</td></tr>
+          <tr><td><strong>Conveyor belt</strong></td><td>After every move it carries the pieces on it one cell along its
+            loop.</td></tr>
+          <tr><td><strong>Portal</strong>, <strong>gravity</strong></td><td>A falling piece goes in one end and comes out the
+            other; or a cell's pieces fall up, left or right instead of down.</td></tr>
+          <tr><td><strong>Spawner</strong></td><td>Refill levels: new pieces drop in only from spawner cells.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="features">Features</h2>
+        <div class="feature-grid">
+          <div class="feature-card"><h4>Proven par</h4><p>The solver searches every position the puzzle can reach, so the
+            par is the true minimum, not an estimate. It also counts the best wins and the different first moves that start
+            one.</p></div>
+          <div class="feature-card"><h4>Difficulty in stars</h4><p>1 to 5 stars from the exact chance that a player swapping
+            at random wins (refill levels: seeded half-greedy players), measured so that each star covers about a fifth of
+            generated puzzles. Ask for a star count and the generator keeps trying until it gets one.</p></div>
+          <div class="feature-card"><h4>Boards</h4><p>3 to 12 cells each way, 2 to 6 piece types, square or shaped
+            (diamond, heart, ring or drawn by you), with obstacles if you like.</p></div>
+          <div class="feature-card"><h4>Every gimmick matters</h4><p>A crate, fixed piece, filter, belt or countdown is kept
+            only when the puzzle really uses it, and a bonus puzzle can be asked to need its bonus pieces.</p></div>
+          <div class="feature-card"><h4>Can this still be won?</h4><p><span class="k">MatchSolver.Outlook</span> answers it
+            for any position in play: won, can win (in how many moves, along which line), or can't (and why). It is the
+            hint, auto-solve and the dead-end warning in the demo.</p></div>
+          <div class="feature-card"><h4>27 measured presets</h4><p>From a first puzzle to expert, shapes, every gimmick and
+            refill levels, each measured on 24 seeds. Auto fixes settings that fight each other and says what it
+            changed.</p></div>
+          <div class="feature-card"><h4>Pictures</h4><p>Save any puzzle as a PNG or SVG: the colour view, a black and white
+            print view, or an answer key with every swap numbered, at any step of the solution, with a goal line and a
+            legend.</p></div>
+          <div class="feature-card"><h4>ScriptableObjects</h4><p>Save one puzzle as an asset or a whole set as a pack; they
+            load back exactly as they were saved.</p></div>
+          <div class="feature-card"><h4>A 3D demo</h4><p>Built in code: four modes, Endless puzzles made to order, four level
+            packs (48 levels), undo, hint, auto-solve, sounds and effects, in Built-in, URP and HDRP.</p></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 id="verified">Why "verified"</h2>
+        <ul>
+          <li><strong>The par is real.</strong> The solver searches every position, so a 7-move puzzle really takes 7 moves.
+            A search cut short is marked as not proven, and the generator never accepts one.</li>
+          <li><strong>It can be won.</strong> Puzzle-mode boards are built backwards from the goal, so they always have a win,
+            and the solver proves it. Refill levels are proven over their own seeded stream.</li>
+          <li><strong>Stars from measurement.</strong> The bands were set over hundreds of generated puzzles of each kind
+            (293 everyday, 234 with bonus pieces, 112 refill levels), so a star means the same on every puzzle, whatever its
+            goal or gimmicks.</li>
+          <li><strong>Misses are reported.</strong> When a star count, a par window or a gimmick can't be met, the puzzle's
+            notes say what happened and what you got instead.</li>
+          <li><strong>Checked.</strong> Over 250 headless tests on the rules, the solver and the generator, with break passes
+            that plant bugs in the code and confirm the tests catch them, and checks in real Unity of the editor tools and
+            the demo.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="start">Getting started</h2>
+        <div class="step"><div class="step-content"><h4>1. Open the generator</h4><p><strong>Window &gt; Living Failure &gt;
+          Simple Match &gt; Match Generator</strong>.</p></div></div>
+        <div class="step"><div class="step-content"><h4>2. Pick a preset and generate</h4><p>Press <strong>Presets</strong>,
+          pick one (for example <em>Gimmicks/Breakables</em>) and press <strong>Generate</strong>.</p></div></div>
+        <div class="step"><div class="step-content"><h4>3. Save it</h4><p>Save a puzzle as an asset, or the whole set as a
+          pack, and play it with your own game or the demo.</p></div></div>
+        <div class="step"><div class="step-content"><h4>4. Play the demo</h4><p>Open
+          <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play.</p></div></div>
+        <p>The <a href="quick-start.html">Quick Start</a> goes through it step by step, with the code to generate and play a
+          puzzle yourself.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>

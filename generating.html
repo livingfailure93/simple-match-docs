@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generating - Simple Match</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="generating.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html#generating" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="quick-start.html">Quick Start</a></li>
+    <li><a href="generating.html" class="active">Generating</a></li>
+    <li><a href="api-reference.html">API Reference</a></li>
+    <li><a href="demos.html">Demos</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>Generating</h1>
+    <p class="tagline">Every setting, what it does, and what was measured.</p>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#how">How a puzzle is made</a></li>
+        <li><a href="#board">The board</a></li>
+        <li><a href="#goals">Goals and the move limit</a></li>
+        <li><a href="#bonus">Bonus pieces</a></li>
+        <li><a href="#gimmicks">Gimmicks</a></li>
+        <li><a href="#refill">Refill levels</a></li>
+        <li><a href="#stars">Stars</a></li>
+        <li><a href="#targets">Targets and the search</a></li>
+        <li><a href="#presets">Presets and Auto</a></li>
+        <li><a href="#notes">When a request can't be met</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+      <p>Every setting below is a field of <span class="k">MatchSettings</span> and a control in the Match Generator window.
+        Where a setting says "measured", the number comes from the harness that tests the asset, over hundreds of generated
+        puzzles.</p>
+
+      <div class="section">
+        <h2 id="how">How a puzzle is made</h2>
+        <p>A <strong>puzzle-mode</strong> board without bonus pieces is <strong>built backwards</strong>: starting from an
+          empty board, the builder adds lines of three, one at a time, each one undoing a swap, so the board always has a
+          win and the builder knows one. The solver then searches every position to prove the true par. A board with bonus
+          pieces is <strong>dealt</strong> instead (every cell gets a piece, no line at the start), and kept only when the
+          solver proves the goal can be reached. A <strong>refill level</strong> is dealt too, with new pieces drawn from a
+          seeded stream, and proven over that stream.</p>
+        <p>Then the gimmicks you asked for are placed where the known win still works, each one checked, the move limit is
+          set, and the stars are measured. <span class="k">MatchGenerator.GenerateVerified</span> tries more seeds until
+          every target is met, or returns the closest puzzle with a note.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="board">The board</h2>
+        <table>
+          <tr><th>Setting</th><th>What it does</th></tr>
+          <tr><td><span class="k">Width</span>, <span class="k">Height</span></td><td>3 to 12 cells each way: the most room
+            the puzzle may use.</td></tr>
+          <tr><td><span class="k">Outline</span></td><td>Full (the rectangle), Cross, Ring, Diamond, Circle, Heart, L, T, U, or
+            Custom (<span class="k">CustomShape</span>: rows of text, top row first, '#' a cell). Cells outside the outline
+            are a floor the pieces rest on.</td></tr>
+          <tr><td><span class="k">Types</span></td><td>2 to 6 piece types (each its own shape and colour).</td></tr>
+          <tr><td><span class="k">Lines</span></td><td>How many lines of three a built puzzle is made from (2 to 15): it
+            holds 3 x Lines pieces, and Lines is the most moves a win needs. Measured: up to 12 lines the par is proven in
+            under 0.3 s, 13 to 15 take 1 to 10 s. The par comes out below the lines (on 1,440 built puzzles it was at most
+            the lines minus 1).</td></tr>
+          <tr><td><span class="k">Obstacles</span></td><td>The share of cells scattered as obstacles (0 to 0.3). After the
+            build, an obstacle with nothing resting on it is removed, so a puzzle keeps a third to a half of them. Measured:
+            up to 0.2 every board builds and puzzles get harder; at 0.3 a fifth to two fifths of builds fail.</td></tr>
+          <tr><td><span class="k">Fit</span></td><td>Cut a full board down to the cells the puzzle uses (empty side columns,
+            the rows above the tallest stack). Nothing is lost: without refills no piece ever reaches them.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="goals">Goals and the move limit</h2>
+        <table>
+          <tr><th>Goal</th><th>What the player must do</th></tr>
+          <tr><td><strong>ClearAll</strong> (the default)</td><td>Clear every piece (and every crate).</td></tr>
+          <tr><td><strong>Collect</strong></td><td>Clear a number of pieces of one type (<span class="k">CollectType</span>,
+            -1 = the generator picks the one that takes the most moves; <span class="k">CollectCount</span>, 0 = every one).
+            Measured: about half the moves of clearing the board, but wins can run 2 to 5 moves longer than par, so the move
+            limit is what makes it a puzzle.</td></tr>
+          <tr><td><strong>ClearLayers</strong></td><td>Take every layer off the layered cells (pieces may be left). See
+            Layers below.</td></tr>
+          <tr><td><strong>ExitAll</strong></td><td>Bring every exit piece down to an exit (pieces may be left).</td></tr>
+        </table>
+        <p><span class="k">MoveSlack</span> (0 to 5) is the moves allowed beyond par: the move limit is par plus it. On
+          clear-all puzzles almost every win takes exactly par moves, so it barely matters there; on collect puzzles it
+          decides the difficulty. Refill levels use <span class="k">RefillMoveSlack</span> (default 2).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="bonus">Bonus pieces</h2>
+        <p>With <span class="k">Bonuses</span> on, four in a line leaves a <strong>Line clear</strong>, an L, T or plus a
+          <strong>Pattern clear</strong>, five in a line a <strong>Type clear</strong>; two swapped together make a combo.
+          A bonus puzzle is dealt, not built, so <span class="k">Lines</span> and <span class="k">Fit</span> don't apply.
+          Measured: with bonuses, 75 to 100% of full boards from 6 x 6 up can be cleared, while plain lines clear 0 to 3% of
+          them.</p>
+        <ul>
+          <li><span class="k">NeedBonuses</span> (on by default, clear all): keep only boards that plain lines alone can't
+            clear, so the player has to make bonus pieces and use them.</li>
+          <li><span class="k">Pattern</span>: what a Pattern clear hits, painted on a 7 x 7 grid
+            (<span class="k">MatchPattern</span>: Square, the default 3 x 3, Plus, Diagonal, Diamond, Big, or
+            <span class="k">MatchPattern.FromRows</span>).</li>
+          <li>Time (measured, proof and exact odds included): 6 x 6 boards 0.1 to 1.3 s, 7 x 7 with 5 types 1 to 3 s, 7 x 7
+            with 4 types about 14 s; bigger boards mostly can't be proven.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="gimmicks">Gimmicks</h2>
+        <p>Each gimmick is placed only where the win the generator knows still works, and kept only when it changes the
+          puzzle, so every one matters. Placing them at random instead leaves most boards unsolvable (measured below).</p>
+        <table>
+          <tr><th>Setting</th><th>What it adds, and what was measured</th></tr>
+          <tr><td><span class="k">LayerShare</span>, <span class="k">MaxLayers</span> (goal ClearLayers)</td><td>Layers on a
+            share of the cells a known clear clears (0.05 to 1), 1 to 3 each. Every puzzle builds in milliseconds; from 0.6
+            up random players win half as often or less.</td></tr>
+          <tr><td><span class="k">Breakables</span>, <span class="k">MaxHits</span></td><td>Crates on cells that stay empty
+            for good, next to where the known swaps make matches; 1 to 3 hits each. Every such puzzle can be cleared, par
+            rises a little and random players win up to half as often. (Slid under columns instead, only 35 to 68% can be
+            cleared.)</td></tr>
+          <tr><td><span class="k">FixedPieces</span></td><td>A share of the safe pieces fixed (safe: the known win plays out
+            the same with it pinned). Every puzzle stays solvable (random pieces: 0 to 38%); par rises by 0.2 to 0.8, but a
+            random player wins a little more often (fewer pieces to swap wrongly), so stars can drop.</td></tr>
+          <tr><td><span class="k">Filters</span></td><td>A share of the safe cells filtered to their piece's type. Every
+            puzzle stays solvable (random cells: 0 to 14%); par rises by 0.1 to 0.4.</td></tr>
+          <tr><td><span class="k">Spreading</span></td><td>Up to 8 moss cells (clear all, bonuses off), each kept only when
+            the known swaps still clear the board. A puzzle keeps 3 to 4 at most. A random player wins 2 to 7 times less
+            often: moss makes puzzles harder, since every move that leaves it alone feeds it.</td></tr>
+          <tr><td><span class="k">Countdowns</span>, <span class="k">CountdownSlack</span></td><td>Up to 8 countdown pieces,
+            each given the move the known win clears it on, plus 0 to 3 moves of slack. With no slack they make puzzles much
+            harder (random players win 2 to 20 times less often); one move of slack mostly takes that away.</td></tr>
+          <tr><td><span class="k">ExitPieces</span></td><td>Up to 4 exit pieces on top of stacks, with an exit at the
+            stack's floor (built puzzles). With ExitAll the par is 3 to 5.</td></tr>
+          <tr><td><span class="k">Belts</span></td><td>Up to 3 conveyor belts (a row that wraps, or a small rectangle's
+            ring): 8 tried per belt, each proven, the hardest kept. Random players win 3 to 12 times less often.</td></tr>
+        </table>
+        <div class="callout info"><p>Portals, gravity and spawners are in the rules, the solver, the pictures and the demo,
+          but the generator doesn't place them: measured, portals mostly made shortcuts and gravity changed little. Set them
+          on a puzzle yourself (<span class="k">MatchData.Portal</span>, <span class="k">Gravity</span>,
+          <span class="k">Spawner</span>) and the solver proves it as usual.</p></div>
+      </div>
+
+      <div class="section">
+        <h2 id="refill">Refill levels</h2>
+        <p>With <span class="k">Refill</span> on, the board is dealt full and new pieces drop in from the top of each fall
+          path after every fall, from a seeded stream, so a level plays the same every time. When no swap is left the board
+          reshuffles (the same pieces, no line, a swap guaranteed). Goals: Collect (0 = a third of the board's cells),
+          ClearLayers, or ExitAll with <span class="k">ExitDrops</span> exit pieces dropping in (1 to 8, at most 2 on the
+          board at once). Clear all can't be met with refills and becomes Collect. Bonus pieces on or off. Crates, fixed
+          pieces, filters, moss, countdowns, exit pieces and belts are switched off on refill levels.</p>
+        <p>Par is proven over the stream; the stars come from how often 400 seeded half-greedy players win within the move
+          limit (par plus <span class="k">RefillMoveSlack</span>, default 2: more moves to spare make a level easier, and
+          its stars say so). Measured: par is proven on almost every level up to 8 x 8 with 5 types, in up to about 7 s; a
+          large or hard level can take 10 to 30 s.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="stars">Stars</h2>
+        <p>1 to 5 stars, each covering about a fifth of generated puzzles of its kind. There are three scales:</p>
+        <table>
+          <tr><th>Scale</th><th>From</th><th>1 star ... 5 stars</th></tr>
+          <tr><td>Everyday (bonuses off)</td><td>the exact chance a player swapping at random wins within the move limit
+            (measured over 293 puzzles)</td><td>1: wins half the time or more; 2: 20%+; 3: 6%+; 4: 1.4%+; 5: less</td></tr>
+          <tr><td>Bonus (bonuses on)</td><td>the same chance (a random player almost never clears a full board, so it has its
+            own bands; 234 puzzles)</td><td>1: 0.07%+; 2: 0.02%+; 3: 0.005%+; 4: 0.0004%+; 5: less</td></tr>
+          <tr><td>Refill</td><td>400 seeded half-greedy players (112 refill levels, at par + 2)</td><td>1: they win 70%+;
+            2: 30%+; 3: 9%+; 4: 1.3%+; 5: less</td></tr>
+        </table>
+        <p>One scale per side, whatever the goal or gimmick, so a star means the same on every puzzle. The chance ranks puzzles
+          the way a careful player does (rank agreement 0.95, measured), while par alone ranks them poorly (0.68).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="targets">Targets and the search</h2>
+        <table>
+          <tr><th>Setting</th><th>What it does</th></tr>
+          <tr><td><span class="k">TargetDifficulty</span></td><td>1 to 5 stars (0 = any): more seeds are tried until one
+            rates that.</td></tr>
+          <tr><td><span class="k">MinPar</span>, <span class="k">MaxPar</span></td><td>A par window (MaxPar 0 = no
+            limit).</td></tr>
+          <tr><td><span class="k">MaxAttempts</span></td><td>How many seeds to try before returning the closest puzzle (1 to
+            500).</td></tr>
+          <tr><td><span class="k">StateBudget</span></td><td>The most positions the solver may search to prove the par (1,000
+            to 20,000,000). A search cut short is never accepted as proven.</td></tr>
+          <tr><td><span class="k">Seed</span></td><td>The same seed and settings always give the same puzzle; empty = a fresh
+            random seed.</td></tr>
+        </table>
+        <p>In the window, <em>Time limit (s)</em> stops a generation that runs too long (it throws a
+          <span class="k">TimeoutException</span> naming the limit), and Cancel stops it at once; from code, pass a
+          <span class="k">CancellationToken</span> and a limit to <span class="k">GenerateVerified</span>.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="presets">Presets and Auto</h2>
+        <p>27 presets in the window's <strong>Presets</strong> menu (<span class="k">MatchPresets.All</span>), each measured
+          on 24 seeds, with its par and stars in its description:</p>
+        <ul>
+          <li><strong>Puzzles</strong>: First puzzle (5 x 5, 3 shapes), Small, Medium, Large (9 x 9, 5 shapes).</li>
+          <li><strong>Difficulty</strong>: Easy, Medium, Hard, Expert (aiming for 2 to 5 stars).</li>
+          <li><strong>Shapes</strong>: Diamond, Heart, Ring, Obstacles.</li>
+          <li><strong>Goals</strong>: Collect.</li>
+          <li><strong>Bonus pieces</strong>: Clear with bonuses, Collect.</li>
+          <li><strong>Gimmicks</strong>: Layers, Breakables, Fixed pieces, Type filters, Spreading, Countdowns, Exit pieces,
+            Conveyor belts.</li>
+          <li><strong>Refill</strong>: Collect, Collect with bonuses, Layers, Exit drops.</li>
+        </ul>
+        <p><strong>Auto</strong> (<span class="k">MatchPresets.Tune</span>) returns a copy of your settings with whatever
+          fights itself fixed, and a sentence per change. It keeps the gimmick you asked for and changes what can't live with
+          it: refill levels turn clear all into collect and switch off the gimmicks they don't have; too many lines for the
+          board, a star or par target the board can't reach, a custom outline that doesn't parse. Without Auto the builder
+          does the same, drops what doesn't fit, and says so in the puzzle's notes.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="notes">When a request can't be met</h2>
+        <p>The generator never quietly hands you something else. <span class="k">MatchData.Notes</span> lists anything it
+          couldn't do exactly, for example "No puzzle met the settings in 20 tries (... difficulty 5 ...): this is the closest",
+          or "Breakables apply to clear-all puzzles (breaking them is part of clearing the board): this puzzle has none.",
+          and <span class="k">MatchAudit.MeetsRequest</span> says whether a puzzle met every request
+          (<span class="k">MatchAudit.Missing</span> lists what it missed). In the window, the Save menu can save only the
+          puzzles on target. <span class="k">MatchAudit.Verify</span> re-solves any puzzle and says whether its stored
+          verdict still holds.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troubleshooting - Simple Match</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="troubleshooting.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html#troubleshooting" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="quick-start.html">Quick Start</a></li>
+    <li><a href="generating.html">Generating</a></li>
+    <li><a href="api-reference.html">API Reference</a></li>
+    <li><a href="demos.html">Demos</a></li>
+    <li><a href="troubleshooting.html" class="active">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>Troubleshooting</h1>
+    <p class="tagline">What the notes mean, and what to do when something isn't as expected.</p>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#notes">Reading the notes</a></li>
+        <li><a href="#closest">"No puzzle met the settings ..."</a></li>
+        <li><a href="#stars">The stars aren't the ones asked for</a></li>
+        <li><a href="#room">Fewer gimmicks than asked</a></li>
+        <li><a href="#budget">"The solver's state budget ran out"</a></li>
+        <li><a href="#slow">Generation feels slow</a></li>
+        <li><a href="#unknown">The warning says nothing on a refill level</a></li>
+        <li><a href="#handmade">A hand-made board is refused</a></li>
+        <li><a href="#input">The demo ignores taps or keys</a></li>
+        <li><a href="#pink">Pink or dark in a pipeline</a></li>
+        <li><a href="#progress">Resetting the demo's progress</a></li>
+        <li><a href="#seeds">Seeds and versions</a></li>
+        <li><a href="#console">Console messages</a></li>
+        <li><a href="#ask">Still stuck</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+
+      <div class="section">
+        <h2 id="notes">Reading the notes</h2>
+        <p>Whenever the generator can't give you exactly what you asked for, it writes a note on the puzzle instead of
+          quietly giving you less. The analysis pane shows every note, and so does <span class="k">MatchData.Notes</span>
+          from code. <span class="k">MatchAudit.MeetsRequest(puzzle)</span> tells you whether a puzzle got everything its
+          settings asked for and <span class="k">MatchAudit.Missing(puzzle)</span> lists what it missed. In the window,
+          <strong>Only on target</strong> hides the puzzles that missed something, and <strong>Save &gt; Pack (on target
+          only)</strong> leaves them out of a pack.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="closest">"No puzzle met the settings in 20 tries (...): this is the closest"</h2>
+        <p>No seed gave a puzzle that met every hard requirement: solvable, the par proven and inside your par window, on your
+          star target, with the bonus pieces needed if you asked for that. The note lists what it was looking for. Try, in
+          this order:</p>
+        <ul>
+          <li><strong>Auto</strong>, which fixes settings that fight each other and says what it changed;</li>
+          <li>more <strong>Max attempts</strong> under Advanced, so more seeds are tried;</li>
+          <li>a wider par window, or a board that can hold the par you want (a built puzzle's par is at most its Lines minus
+            1);</li>
+          <li>one star more or less (see below).</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="stars">The stars aren't the ones asked for</h2>
+        <p>The stars come from how often a player swapping at random (on refill levels, a half-greedy player) wins within the
+          move limit. Some settings can't reach every star:</p>
+        <ul>
+          <li><strong>Small boards</strong> make easy puzzles. Measured on the presets: 5 x 5 with 3 shapes rates 1 to 3
+            stars (mostly 2), 6 x 6 with 4 shapes 1 to 4, and 7 x 7 with 4 shapes mostly 4 to 5. For 4 or 5 stars use a
+            bigger board, more lines or more shapes, or a gimmick that makes puzzles harder (spreading, countdowns with no
+            slack, belts).</li>
+          <li><strong>Moves to spare</strong> make a puzzle easier, so its stars drop: on collect goals and refill levels
+            this setting decides much of the difficulty.</li>
+          <li><strong>Collect on bonus boards</strong> is easy once bonus pieces fly: it rates up to about 4 stars.</li>
+          <li><strong>Fixed pieces and type filters</strong> raise the par but can make a random player win slightly more
+            often (fewer pieces to swap wrongly), so they can lower the stars.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="room">Fewer gimmicks than asked</h2>
+        <p>Every gimmick is placed only where the known win still works, and kept only when it changes the puzzle. When there
+          is no such place, the puzzle gets fewer (or none) and a note says why, for example "Breakables: no cell that stays
+          empty is next to a match of this puzzle's swaps, so it has none. A taller board leaves more room above the pieces".
+          What helps:</p>
+        <ul>
+          <li><strong>Crates, moss, exit pieces</strong> need empty room above the pieces: a taller board, fewer lines, or
+            Fit off. They are for clear-all puzzles without bonus pieces (exit pieces also for ExitAll); a dealt bonus board is
+            full, so it has none.</li>
+          <li><strong>Spreading</strong> keeps 3 to 4 cells at most; GenerateVerified tries more seeds when a puzzle got
+            none.</li>
+          <li><strong>Refill levels</strong> switch off crates, fixed pieces, filters, moss, countdowns, exit pieces and
+            belts.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="budget">"The solver's state budget ran out"</h2>
+        <p>The solver searched as many positions as <strong>State budget</strong> (under Advanced) allows without finishing.
+          The generator never accepts such a puzzle as proven; it tries another seed. Raise the budget, or make the puzzle
+          smaller: fewer lines (up to 12 are proven in under 0.3 s), fewer shapes on a bonus board, or a smaller board.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="slow">Generation feels slow</h2>
+        <p>Measured times for one puzzle, proof and odds included: built puzzles up to 12 lines well under a second, 13 to 15
+          lines 1 to 10 s; bonus boards 6 x 6 up to about 1 s, 7 x 7 with 5 shapes 1 to 3 s, 7 x 7 with 4 shapes about 14 s;
+          refill levels mostly a few seconds, large or hard ones 10 to 30 s. A star target multiplies that by the seeds it
+          takes to hit.</p>
+        <p>Generation runs on a background thread, so the editor stays usable. Set <strong>Time limit (s)</strong> and a
+          puzzle that takes longer is listed as not made, and Cancel stops at once. For bonus boards, 5 shapes are faster than
+          4 (more shapes, fewer matches to search).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="unknown">The warning says nothing on a refill level</h2>
+        <p>The dead-end warning asks <span class="k">MatchSolver.Outlook</span>, which searches up to
+          <span class="k">MatchGame.OutlookBudget</span> positions (200,000), then once more ten times as far. On a big refill
+          level it can still run out and answer <em>Unknown</em>, and the demo then says nothing rather than guess. It is never
+          wrong, only sometimes silent. Raise the budget for more answers at the cost of more time on a worker thread.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="handmade">A hand-made board is refused</h2>
+        <p><span class="k">MatchRules.Validate(puzzle, out error)</span> says why in words. The usual causes:</p>
+        <ul>
+          <li>a piece floating over an empty cell (every piece must rest on the bottom, a blocked cell, a crate or another
+            piece);</li>
+          <li>a line of three already on the board at the start;</li>
+          <li>an array of the wrong length (each gimmick array has one entry per cell), or a type outside 0 to Types - 1;</li>
+          <li>row 0 is the <strong>bottom</strong> row: a board typed top row first comes out upside down.</li>
+        </ul>
+        <p>Then <span class="k">MatchAudit.Verify</span> solves it and stamps its par, odds and stars.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="input">The demo ignores taps or keys</h2>
+        <ul>
+          <li>The demo reads the <strong>Input System</strong> package: set Project Settings &gt; Player &gt; Active Input
+            Handling to <em>Input System Package</em> or <em>Both</em>.</li>
+          <li>The HUD and hub make an EventSystem with the Input System's UI module when the scene has none. If your scene has
+            one with the old <span class="k">StandaloneInputModule</span>, swap it for
+            <span class="k">InputSystemUIInputModule</span>.</li>
+          <li>Taps are ignored while a move is still playing out and over the HUD's buttons.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="pink">Pink or dark in a pipeline</h2>
+        <ul>
+          <li><strong>Pink in a build</strong>: the demo makes its materials in code, and a build strips shaders that only
+            code uses. Before every build, <span class="k">MatchLookKeeper</span> writes
+            <span class="k">Runtime/Demo/Resources/SimpleMatchLook.mat</span> with the active pipeline's lit shader, so the
+            build keeps it. If you see pink, check that file exists after a build (deleting it is fine: the next build writes
+            it again).</li>
+          <li><strong>Dark or tinted in HDRP</strong>: out of the box HDRP uses physical light units, automatic exposure and
+            sky lighting. <span class="k">MatchDemo.HdrpLook</span> (on by default) adds a global volume at priority 10 with a
+            fixed exposure and a gradient sky, and sets the sun in lux, so the demo looks the same as on the other pipelines.
+            Turn it off to let your own volumes and lights take over.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="progress">Resetting the demo's progress</h2>
+        <p>The demo saves each pack level's best moves in PlayerPrefs, under
+          <span class="k">SimpleMatch.Demo.Best.&lt;pack name&gt;.&lt;level&gt;</span>, and the warning toggle under
+          <span class="k">SimpleMatch.Demo.WarnDeadEnds</span>. Call
+          <span class="k">MatchPackProgress.Clear(packName, count)</span> to forget a pack, or delete those keys. A pack's
+          progress is filed under its pack name, so renaming a pack starts it fresh.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="seeds">Seeds and versions</h2>
+        <p>The same settings and seed always give the same puzzle within a version of Simple Match. A future version that
+          improves the generator may change what a seed produces. Saved assets store the puzzle itself, not just its seed, so
+          your saved puzzles and packs never change. Verified generation stores the seed that actually worked, such as
+          <span class="k">level-1#2</span>, so copying a puzzle's own seed always rebuilds that exact puzzle. Refill levels
+          store their stream's seed too, so they drop the same pieces every time.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="console">Console messages</h2>
+        <ul>
+          <li><strong>"[Simple Match] Documentation page not found"</strong>: the documentation menu looks for these pages in
+            a folder whose path contains SimpleMatch and Documentation. Keep the Documentation folder inside the Simple Match
+            folder.</li>
+          <li><strong>"[Simple Match] Generation failed"</strong>: something went wrong on the window's generation thread.
+            Please send the message with your settings and seed.</li>
+          <li><strong>"[Simple Match] Kept ... in the build for the demo"</strong>: the build step wrote the look material,
+            which is expected after you switch render pipelines.</li>
+          <li><strong>"[Simple Match] No lit shader found for the active render pipeline"</strong>: the pipeline asset has no
+            default material, so the demo may draw pink in a build. Give the pipeline asset a default material.</li>
+          <li><strong>"[Simple Match] Exported 12 files from ..."</strong>: a pack's pictures were written, as asked.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="ask">Still stuck</h2>
+        <p>Email <strong>livingfailuregames@gmail.com</strong> with your Unity version, the puzzle's seed and settings (the
+          window's Copy button copies the seed), and the notes it shows. A seed rebuilds the puzzle exactly, so that is
+          usually all it takes to see what you see.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>

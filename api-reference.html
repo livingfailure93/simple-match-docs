@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Reference - Simple Match</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="api-reference.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html#api-reference" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="quick-start.html">Quick Start</a></li>
+    <li><a href="generating.html">Generating</a></li>
+    <li><a href="api-reference.html" class="active">API Reference</a></li>
+    <li><a href="demos.html">Demos</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>API Reference</h1>
+    <p class="tagline">The public types, with samples that compile against the asset.</p>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#layout">Assemblies and numbers</a></li>
+        <li><a href="#generator">MatchGenerator</a></li>
+        <li><a href="#data">MatchData</a></li>
+        <li><a href="#play">Playing: MatchRules</a></li>
+        <li><a href="#trace">Moves, waves and beats</a></li>
+        <li><a href="#solver">Solving and rating</a></li>
+        <li><a href="#outlook">Can it still be won?</a></li>
+        <li><a href="#byhand">A puzzle by hand</a></li>
+        <li><a href="#presets">Presets, Auto and audit</a></li>
+        <li><a href="#pictures">Pictures and words</a></li>
+        <li><a href="#assets">ScriptableObjects</a></li>
+        <li><a href="#demo">Demo components</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+      <p>The public types you are most likely to use. Every member has XML documentation in the source, so your IDE shows
+        the details (and the measurements behind them) as you type.</p>
+
+      <div class="section">
+        <h2 id="layout">Assemblies and numbers</h2>
+        <table>
+          <tr><th>Assembly</th><th>Namespace</th><th>What it holds</th></tr>
+          <tr><td><span class="k">SimpleMatch</span></td><td><span class="k">SimpleMatch</span></td><td>The core: settings,
+            generator, rules, solver, pictures, ScriptableObjects. Pure C# apart from the ScriptableObjects, with no package
+            dependencies, so it runs on a worker thread and in your own tests.</td></tr>
+          <tr><td><span class="k">SimpleMatch.Demo</span></td><td><span class="k">SimpleMatch.Demo</span></td><td>The 3D
+            demo (Input System, Unity UI, and HDRP when it is installed).</td></tr>
+          <tr><td><span class="k">SimpleMatch.Editor</span></td><td><span class="k">SimpleMatch.Editor</span></td><td>The
+            Match Generator window, inspectors, the documentation menu, the build look keeper.</td></tr>
+        </table>
+        <p>A cell is a number: <span class="k">y * Width + x</span>, with row 0 at the <strong>bottom</strong> (pieces fall
+          toward it). A piece is an <span class="k">sbyte</span>: -1 empty, otherwise its type (0 to Types - 1) in the low 4
+          bits and its bonus kind above them; <span class="k">MatchPiece</span> reads and makes them
+          (<span class="k">MatchPiece.Make(type, BonusKind.LineRow)</span>, <span class="k">MatchPiece.Exit</span> for an exit
+          piece). A solution is stored flat: a0, b0, a1, b1 ...</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generator">MatchGenerator</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">GenerateVerified(settings)</span></td><td>A puzzle that meets every hard requirement
+            (solvable, par proven, inside the par window, on the star target, not a freebie). Tries the seed first, then
+            seed#1, seed#2 ... up to <span class="k">MaxAttempts</span>; if none works, the closest, with a note.</td></tr>
+          <tr><td><span class="k">GenerateVerified(settings, token, limitSeconds)</span></td><td>The same, stoppable: a
+            cancelled <span class="k">CancellationToken</span> throws <span class="k">OperationCanceledException</span>, and
+            past the limit (0 = none) a <span class="k">TimeoutException</span>.</td></tr>
+          <tr><td><span class="k">Generate(settings)</span></td><td>One attempt with exactly this seed, sound or not.</td></tr>
+          <tr><td><span class="k">GenerateBatch(settings, count)</span></td><td>A set of verified puzzles with seeds
+            seed-0, seed-1 ...</td></tr>
+          <tr><td><span class="k">IsSound(m, settings)</span></td><td>True when a puzzle meets the settings' hard
+            requirements.</td></tr>
+        </table>
+<pre><code>using SimpleMatch;
+
+var s = new MatchSettings { Width = 7, Height = 7, Types = 4, Lines = 8, Breakables = 0.5f, TargetDifficulty = 3 };
+s.Seed = "crates-1";
+MatchData m = MatchGenerator.GenerateVerified(s);
+Debug.Log($"{MatchAudit.Short(m)}");   // "7 x 7, clear all (4 breakables), par 4 in 4 moves, 3 stars"
+foreach (var note in m.Notes) Debug.Log(note);</code></pre>
+        <p>Generation is pure C#: run it on a worker thread (<span class="k">Task.Run</span>) to keep the game responsive, as
+          the window and the demo do. On WebGL, which has no threads, call it directly.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="data">MatchData</h2>
+        <p>One puzzle: the board, the start, the goal, the gimmicks, and what the solver proved. Plain serializable fields,
+          so a ScriptableObject holds it. Null arrays mean "none".</p>
+        <table>
+          <tr><th>Field</th><th>What it holds</th></tr>
+          <tr><td><span class="k">Width</span>, <span class="k">Height</span>, <span class="k">Types</span></td><td>The board
+            size and how many piece types.</td></tr>
+          <tr><td><span class="k">Cells</span></td><td>The piece in every cell at the start (-1 = empty).</td></tr>
+          <tr><td><span class="k">Blocked</span>, <span class="k">Outside</span></td><td>Cells nothing enters; those outside
+            the board's shape (the rest are obstacles, <span class="k">IsObstacle(cell)</span>).</td></tr>
+          <tr><td><span class="k">Goal</span></td><td>A <span class="k">MatchGoal</span>:
+            <span class="k">ClearAll()</span>, <span class="k">Collect(types, type, count)</span>,
+            <span class="k">ClearLayers()</span>, <span class="k">ExitAll()</span>.</td></tr>
+          <tr><td><span class="k">Bonuses</span>, <span class="k">Pattern</span></td><td>Bonus pieces on, and what a
+            Pattern clear hits.</td></tr>
+          <tr><td><span class="k">Layers</span>, <span class="k">Breakable</span>, <span class="k">Fixed</span>,
+            <span class="k">Filter</span>, <span class="k">Spread</span>, <span class="k">Countdown</span>,
+            <span class="k">Exit</span>, <span class="k">Belt</span>, <span class="k">Portal</span>,
+            <span class="k">Gravity</span></td><td>The gimmicks, one array each (index = cell). Belt and Portal hold the next
+            cell; Gravity 0 down, 1 up, 2 left, 3 right.</td></tr>
+          <tr><td><span class="k">Refill</span>, <span class="k">DropSeed</span>, <span class="k">Spawner</span>,
+            <span class="k">ExitDrops</span>, <span class="k">ExitDropMax</span></td><td>Refill levels: on, the stream's seed,
+            spawner cells, exit pieces that drop in.</td></tr>
+          <tr><td><span class="k">Solvable</span>, <span class="k">Complete</span>, <span class="k">Par</span></td><td>The
+            verdict: can it be won, did the search finish (Par proven), the fewest moves.</td></tr>
+          <tr><td><span class="k">MoveLimit</span></td><td>Par plus the moves to spare.</td></tr>
+          <tr><td><span class="k">Solution</span>, <span class="k">SolutionMoves()</span></td><td>A fewest-move win (flat,
+            or as (a, b) swaps).</td></tr>
+          <tr><td><span class="k">Solutions</span>, <span class="k">FirstMoves</span></td><td>How many fewest-move wins, and
+            how many first swaps start one.</td></tr>
+          <tr><td><span class="k">RandomWin</span>, <span class="k">CarefulWin</span>, <span class="k">BotWin</span>,
+            <span class="k">OddsExact</span></td><td>The odds the stars come from.</td></tr>
+          <tr><td><span class="k">Difficulty</span></td><td>1 to 5 stars (0 = the par isn't proven).</td></tr>
+          <tr><td><span class="k">NeedsBonuses</span></td><td>Proven: plain lines alone can't reach the goal.</td></tr>
+          <tr><td><span class="k">Seed</span>, <span class="k">Settings</span>, <span class="k">Notes</span></td><td>How it
+            was made (the same seed and settings rebuild it exactly), and anything worth knowing about it.</td></tr>
+          <tr><td><span class="k">Board()</span>, <span class="k">Start()</span></td><td>The board (it never changes in play)
+            and a fresh copy of the start position, ready for <span class="k">MatchRules</span>.</td></tr>
+        </table>
+        <p><span class="k">MatchBoard</span> holds what never changes in play (size, types, blocked cells, filters, exits,
+          portals, belts, gravity, spawners, bonuses on); <span class="k">MatchState</span> holds what does (the pieces,
+          layers, crates, fixed pieces, moss, countdowns, the refill stream, what has been collected).
+          <span class="k">MatchState.Clone()</span> copies a position.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="play">Playing: MatchRules</h2>
+        <p>The rules the generator and the solver use, so a game built on them always agrees with the par.</p>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">TrySwap(board, state, a, b, out report, out reason)</span></td><td>Make a swap and resolve
+            every wave (cascades, bonus pieces, gimmicks, belts, moss, countdowns, refills, a reshuffle). False, with the
+            reason in words and nothing changed, when it isn't allowed.</td></tr>
+          <tr><td><span class="k">Refusal(board, state, a, b)</span></td><td>Why a swap isn't allowed, or null: not
+            neighbours, an empty or blocked cell, the same type, a fixed piece or filter, no match made.</td></tr>
+          <tr><td><span class="k">LegalSwaps(board, state)</span></td><td>Every allowed swap from here.</td></tr>
+          <tr><td><span class="k">FindMatches(board, state)</span></td><td>The groups matched right now.</td></tr>
+          <tr><td><span class="k">Validate(m, out error)</span></td><td>True when a puzzle's data can be played (sizes, types,
+            every piece resting, no match at the start, a goal that fits).</td></tr>
+          <tr><td><span class="k">MatchSolver.Met(board, state, goal, mostLeft, counts)</span></td><td>The goal check the
+            solver uses (<span class="k">mostLeft</span> from <span class="k">goal.MostLeft(board, start)</span>,
+            <span class="k">counts</span> scratch of Types + 1).</td></tr>
+          <tr><td><span class="k">MatchState.Exploded</span></td><td>True once a countdown has run out (the level is
+            lost).</td></tr>
+        </table>
+<pre><code>MatchBoard board = m.Board();
+MatchState state = m.Start();
+int[] mostLeft = m.Goal.MostLeft(board, m.Start()), counts = new int[board.Types + 1];
+int moves = 0;
+
+bool Play(int a, int b)
+{
+    if (!MatchRules.TrySwap(board, state, a, b, out MoveReport report, out string why)) { Debug.Log(why); return false; }
+    moves++;
+    if (MatchSolver.Met(board, state, m.Goal, mostLeft, counts)) Debug.Log("won");
+    else if (state.Exploded || moves &gt;= m.MoveLimit) Debug.Log("lost");
+    return true;
+}</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="trace">Moves, waves and beats</h2>
+        <p>A <span class="k">MoveReport</span> says what a move did. <span class="k">Steps</span> holds one
+          <span class="k">CascadeStep</span> per wave: the groups matched, the cells cleared, the bonus pieces made
+          (<span class="k">Made</span>) and fired (<span class="k">Fired</span>), the layers, crates and moss hit, the exit
+          pieces that left, the new pieces dropped in. The report also has <span class="k">Cleared</span>,
+          <span class="k">Combo</span>, <span class="k">CascadeDepth</span>, <span class="k">SpreadTo</span>,
+          <span class="k">Exploded</span> and <span class="k">Reshuffled</span>.</p>
+        <p>Set <span class="k">Trace</span> before the move and <span class="k">Beats</span> gets every step in order, each a
+          <span class="k">MoveBeat</span> with its <span class="k">Kind</span> (Swap, Clear, Fall, Exit, Drop, Belt, Spread,
+          Tick, Reshuffle), the pieces it moved (<span class="k">Moves</span>: from, to), the cells it is about, and a copy of
+          the position after it (<span class="k">After</span>). That is what a game animates; the demo's
+          <span class="k">MatchGame</span> plays them one by one.</p>
+<pre><code>var report = new MoveReport { Trace = true };
+if (MatchRules.Refusal(board, state, a, b) == null)
+{
+    MatchRules.ApplySwap(board, state, a, b, report);
+    foreach (MoveBeat beat in report.Beats)
+        Debug.Log($"{beat.Kind}: {beat.Moves.Count} pieces moved, {beat.Cells.Count} cells");
+}</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="solver">Solving and rating</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchSolver.Solve(board, start, goal, maxStates)</span></td><td>The fewest moves to the
+            goal, or proof there are none. A <span class="k">SolveResult</span>: <span class="k">Status</span> (Solved,
+            Unsolvable, NotWithinLimit, OutOfBudget), <span class="k">Par</span>, <span class="k">Moves</span>,
+            <span class="k">Solutions</span>, <span class="k">FirstMoves</span>, <span class="k">States</span>,
+            <span class="k">AtLeast</span>. Puzzle mode; refill levels are proven by the generator over their stream.</td></tr>
+          <tr><td><span class="k">MatchDifficulty.Stars(m)</span>, <span class="k">StarsFor(chance, scale)</span>,
+            <span class="k">BandsFor(scale)</span></td><td>The stars and the three scales' bands
+            (<span class="k">StarScale</span> Everyday, Bonus, Refill).</td></tr>
+          <tr><td><span class="k">MatchAnalysis.RandomWin(m, plays, limit)</span></td><td>The share of seeded random players
+            who win within a limit (an estimate; the stamped <span class="k">RandomWin</span> is exact when
+            <span class="k">OddsExact</span>).</td></tr>
+          <tr><td><span class="k">MatchBots.HalfGreedyWin(m, plays, limit)</span></td><td>The same for half-greedy players
+            (what refill levels are rated on).</td></tr>
+          <tr><td><span class="k">MatchCancel.Use(token)</span></td><td>Make any long call (a re-solve, a Verify) stoppable on
+            this thread: <span class="k">using (MatchCancel.Use(token)) MatchAudit.Verify(...)</span>.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="outlook">Can it still be won?</h2>
+        <p><span class="k">MatchSolver.Outlook(m, state, movesMade, maxStates = 200000, board = null)</span> answers it for
+          any position in play, puzzle mode and refill levels alike. A <span class="k">MatchOutlook</span>:</p>
+        <table>
+          <tr><th>Member</th><th>What it holds</th></tr>
+          <tr><td><span class="k">Kind</span></td><td><span class="k">Won</span>, <span class="k">CanWin</span>,
+            <span class="k">CannotWin</span> or <span class="k">Unknown</span> (the budget ran out; it is never
+            wrong).</td></tr>
+          <tr><td><span class="k">MovesNeeded</span>, <span class="k">Moves</span>, <span class="k">Hint</span></td><td>The
+            fewest moves still needed, one line that does it, and its first swap (a hint; auto-solve plays the line).</td></tr>
+          <tr><td><span class="k">Why</span></td><td>Why it can't be won, in the player's words: a countdown ran out, no
+            moves left, no swap left, the goal can't be met any more, or "it needs more than the 3 moves left".</td></tr>
+          <tr><td><span class="k">OnSolution</span></td><td>The position is still on the stored solution: the answer needed
+            no search.</td></tr>
+        </table>
+<pre><code>MatchOutlook o = MatchSolver.Outlook(m, state, moves, 200_000, board);
+if (o.Kind == OutlookKind.CannotWin) Debug.Log("This can't be won any more: " + o.Why);
+else if (o.Kind == OutlookKind.CanWin &amp;&amp; o.Hint.HasValue) Debug.Log($"hint: swap {o.Hint.Value.a} and {o.Hint.Value.b}");</code></pre>
+        <p>It can take a moment on big refill boards, so ask it on a worker thread, as the demo does (a newer position cancels
+          an older ask through <span class="k">MatchCancel</span>).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="byhand">A puzzle by hand</h2>
+        <p>Fill a <span class="k">MatchData</span>, check it with <span class="k">MatchRules.Validate</span>, and
+          <span class="k">MatchAudit.Verify</span> solves it and stamps its par, odds and stars, as the generator would.</p>
+<pre><code>// 4 x 2, two types: swapping the third column's pieces makes two lines of four
+var hand = new MatchData
+{
+    Width = 4, Height = 2, Types = 2,
+    Cells = new sbyte[] { 0, 0, 1, 0,     // row 0 (the bottom)
+                          1, 1, 0, 1 },   // row 1
+    Goal = MatchGoal.ClearAll(),
+};
+if (!MatchRules.Validate(hand, out string error)) Debug.Log(error);
+else
+{
+    MatchAudit.Verify(hand, out string before, out string after);
+    Debug.Log(after);   // "4 x 2, clear all, par 1 in 1 moves, 2 stars"
+}</code></pre>
+        <p>Gimmicks are arrays of the board's size (for example <span class="k">hand.Fixed = new bool[8]</span>, then
+          <span class="k">hand.Fixed[1] = true</span>). The generator doesn't place portals, gravity or spawners, but the rules,
+          the solver, the pictures and the demo all play them, so set them by hand like this.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="presets">Presets, Auto and audit</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchPresets.All</span>, <span class="k">Find(name)</span></td><td>The 27 presets
+            (<span class="k">MatchPreset</span>: <span class="k">Name</span> such as "Gimmicks/Breakables",
+            <span class="k">Make()</span> a fresh copy of its settings).</td></tr>
+          <tr><td><span class="k">MatchPresets.Tune(settings, changes)</span></td><td>Auto: a copy with settings that fight
+            each other fixed, a sentence per change.</td></tr>
+          <tr><td><span class="k">MatchAudit.Verify(m, out before, out after)</span></td><td>Re-solve and restamp; true when
+            the verdict changed.</td></tr>
+          <tr><td><span class="k">MatchAudit.MeetsRequest(m)</span>, <span class="k">Missing(m)</span></td><td>Did a puzzle
+            get everything its settings asked for, and what did it miss ("par 4, asked 6 or more").</td></tr>
+          <tr><td><span class="k">MatchAudit.Reroll(m)</span></td><td>A fresh puzzle from the same settings and a new
+            seed.</td></tr>
+          <tr><td><span class="k">MatchAudit.Short(m)</span>, <span class="k">IsFreebie(m)</span></td><td>One line about a
+            puzzle; true when a player swapping at random always wins.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="pictures">Pictures and words</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchExport.Png(m, options)</span>, <span class="k">Svg(m, options)</span>,
+            <span class="k">Pixels(...)</span></td><td>A picture of the puzzle (<span class="k">ExportOptions</span>:
+            <span class="k">Size</span>, <span class="k">Style</span>, <span class="k">Step</span> for a position along the
+            solution, <span class="k">Goal</span> line, <span class="k">Legend</span>). Styles: AsShown (colour and shape), Printable (black on white, shape alone) and AnswerKey, which numbers the
+            solution's swaps on the board.</td></tr>
+          <tr><td><span class="k">MatchExport.StateAt(m, step)</span></td><td>The position after the first steps of the
+            solution.</td></tr>
+          <tr><td><span class="k">MatchExport.TypeRgb(type)</span>, <span class="k">TypeShapes</span>,
+            <span class="k">ShapeParts(type)</span></td><td>Each type's colour, its shape in words, and its outline (the demo
+            extrudes these).</td></tr>
+          <tr><td><span class="k">MatchNarration.GoalSentence(m)</span></td><td>"clear the board in 5 moves".</td></tr>
+          <tr><td><span class="k">MatchNarration.Frames(m)</span></td><td>The start and each move of the solution, with a
+            caption ("Move 2: swap (3, 1) and (3, 2) - clears 6 pieces in 2 waves, makes a Line clear (row).").</td></tr>
+          <tr><td><span class="k">MatchNarration.Summary(m)</span>, <span class="k">Gimmicks(m)</span>,
+            <span class="k">Describe(m, cell, state)</span></td><td>The board and its gimmicks in words, and what is on one
+            cell.</td></tr>
+        </table>
+<pre><code>byte[] png = MatchExport.Png(m, new ExportOptions { Size = 1024, Goal = true, Legend = true });
+System.IO.File.WriteAllBytes("puzzle.png", png);</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="assets">ScriptableObjects</h2>
+        <table>
+          <tr><th>Type</th><th>What it is</th></tr>
+          <tr><td><span class="k">MatchPuzzleAsset</span></td><td>One puzzle (<span class="k">Puzzle</span>, with
+            <span class="k">Par</span>, <span class="k">MoveLimit</span>, <span class="k">Difficulty</span>,
+            <span class="k">Refill</span> shown in the inspector).</td></tr>
+          <tr><td><span class="k">MatchPuzzlePack</span></td><td>A set of puzzles (<span class="k">Puzzles</span>,
+            <span class="k">Get(i)</span>, <span class="k">Replace(i, m)</span>).</td></tr>
+          <tr><td><span class="k">IPuzzleProvider</span></td><td>Both: <span class="k">AppendTo(levels)</span> adds their
+            puzzles to a level list.</td></tr>
+          <tr><td><span class="k">PuzzleAssets.CreatePuzzle(m)</span>, <span class="k">CreatePack(list, name)</span></td><td>Wrap
+            puzzles at runtime (not saved to disk).</td></tr>
+        </table>
+        <p>Unity can't store a null array, so a stored puzzle's "none" comes back as an empty array;
+          <span class="k">MatchData.Normalize()</span> puts it back (the assets do it when they load).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demo">Demo components</h2>
+        <p>In <span class="k">SimpleMatch.Demo</span>. See <a href="demos.html#own">Demos</a> for how they fit together.</p>
+        <table>
+          <tr><th>Type</th><th>Members</th></tr>
+          <tr><td><span class="k">MatchGame</span></td><td><span class="k">Begin(m)</span>, <span class="k">Swap(a, b)</span>,
+            <span class="k">Tap(screen)</span>, <span class="k">Drag(from, to)</span>, <span class="k">Undo()</span>,
+            <span class="k">Restart()</span>, <span class="k">ShowHint()</span>, <span class="k">StartAutoSolve()</span>,
+            <span class="k">StopAutoSolve()</span>, <span class="k">Turn</span> / <span class="k">Tilt</span> /
+            <span class="k">Zoom</span> / <span class="k">ResetView</span>; <span class="k">State</span>,
+            <span class="k">Moves</span>, <span class="k">MovesLeft</span>, <span class="k">IsWon</span>,
+            <span class="k">LostReason</span>, <span class="k">Busy</span>, <span class="k">Thinking</span>; events
+            <span class="k">Step</span>, <span class="k">Moved</span>, <span class="k">Refused</span>,
+            <span class="k">Won</span>, <span class="k">Lost</span>, <span class="k">NoWay</span>,
+            <span class="k">OutlookReady</span>, <span class="k">Cue</span>, <span class="k">Moment</span>; timings
+            (<span class="k">SwapTime</span>, <span class="k">ShuffleTime</span> ...), <span class="k">PointerInput</span>,
+            <span class="k">KeyboardInput</span>, <span class="k">WarnDeadEnds</span>, <span class="k">OutlookBudget</span>,
+            <span class="k">CameraControls</span>, <span class="k">FollowPiece</span>.</td></tr>
+          <tr><td><span class="k">MatchBoardView</span></td><td><span class="k">Build(m)</span>, <span class="k">Show(state)</span>,
+            <span class="k">Sync(state)</span>, <span class="k">CellWorld(cell)</span>, <span class="k">CellAt(local)</span>,
+            <span class="k">FrameCamera(cam)</span>, <span class="k">FramePose(...)</span>, <span class="k">Triangles</span>.</td></tr>
+          <tr><td><span class="k">MatchHud</span>, <span class="k">MatchHub</span>, <span class="k">MatchDemo</span></td><td>The
+            HUD, the front screen, and the component that ties it all together.</td></tr>
+          <tr><td><span class="k">MatchBeeper</span>, <span class="k">MatchEffects</span></td><td>Sounds and effects for the
+            game's <span class="k">Cue</span> (<span class="k">MatchCue</span>: Pick, Swap, Bump, Match, BonusMade, Line,
+            Pattern, TypeClear, Land, Layer, Crate, Moss, Exit, Belt, Portal, Warn, Shuffle, Hint, NoWay, Rewind, Win, Lose)
+            and <span class="k">Moment</span> events.</td></tr>
+          <tr><td><span class="k">MatchEndless</span></td><td>The Endless recipes: <span class="k">Variants(mode)</span>,
+            <span class="k">Settings(mode, variant, stars, deal)</span>, <span class="k">MostStars</span>. Pure C#.</td></tr>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>

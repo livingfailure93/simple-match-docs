@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Match - Documentation (single page)</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<!-- Generated from the other documentation pages, which hold the same text. -->
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="index.html" class="format-link">Multi-Page</a>
+    <a href="single-page.html" class="format-link active">Single Page</a>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>Contents</h3>
+      <ul>
+        <li><a href="#index">Home</a></li>
+        <li><a href="#quick-start">Quick Start</a></li>
+        <li><a href="#generating">Generating</a></li>
+        <li><a href="#api-reference">API Reference</a></li>
+        <li><a href="#demos">Demos</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+
+      <div class="hero" id="index">
+    <h1>Simple Match</h1>
+    <p class="tagline">Match-3 puzzles for Unity that are generated, solved exactly and rated.</p>
+    <p class="sub-tagline">Simple Match builds a match-3 puzzle from your settings, then proves it can be won and works out
+      its <strong>par</strong>, the fewest moves it takes. It makes puzzles to clear, to collect, to peel layers off or to
+      bring exit pieces down, with bonus pieces, crates, moss, countdowns, belts, portals and more, and refill levels where
+      new pieces drop in from a seeded stream. Every puzzle is rated 1 to 5 stars and can be saved as a ScriptableObject,
+      exported as a PNG or SVG picture, or played in the included 3D demo, which can also tell the player when a level
+      can't be won any more.</p>
+    <div class="pill">Version 1.0, by Living Failure</div>
+      </div>
+
+
+      <div class="section">
+        <h2 id="index-what">What it is</h2>
+        <p>Simple Match is a match-3 puzzle generator with a solver built in. The player swaps two pieces side by side to
+          line up three or more of a kind; the line clears, the pieces above fall into the gap, and falling pieces can line
+          up again (a cascade). You choose the board, the goal and what goes on it, and it builds a puzzle for you. Then it
+          searches every position the puzzle can reach, so you know for certain that it can be won and how many moves the
+          best win takes.</p>
+        <p>Everything is deterministic. The same settings and the same seed always give the same puzzle, and every puzzle
+          keeps the settings and seed it was made from. Refill levels draw their new pieces from a seeded stream, so a level
+          plays the same every time and can be proven too. When the generator can't give you exactly what you asked for, it
+          says so in the puzzle's notes instead of quietly handing you something else.</p>
+        <p>In the editor pictures and in the demo every piece type has its own shape as well as its own colour (circle,
+          square, triangle, diamond, hexagon and plus), and every gimmick has a shape of its own, so colour-blind players can
+          tell them all apart.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="index-rules">The rules</h2>
+        <div class="feature-grid">
+          <div class="feature-card"><h4>Swap two neighbours</h4><p>Swap two pieces that sit side by side (not diagonally).
+            A swap is only allowed when it makes a line (or sets off a type clear or two bonus pieces together); otherwise it
+            doesn't happen, and the rules say why.</p></div>
+          <div class="feature-card"><h4>Lines of three or more</h4><p>Three or more of one type in a row or a column clear
+            together. Lines that touch clear as one group, so an L, a T or a plus is one match.</p></div>
+          <div class="feature-card"><h4>Pieces fall</h4><p>The pieces above an empty cell fall into it, toward row 0 (the
+            bottom). Obstacles, crates and fixed pieces hold up what is above them. Gravity can be turned sideways or up cell
+            by cell, and portals carry a falling piece elsewhere.</p></div>
+          <div class="feature-card"><h4>Cascades</h4><p>Pieces that land in a line clear too, wave after wave, until nothing
+            lines up. The move report records every wave.</p></div>
+          <div class="feature-card"><h4>Goals</h4><p>Clear the board, collect a number of pieces of given shapes, clear
+            every layer, or bring every exit piece down to an exit, within the move limit.</p></div>
+          <div class="feature-card"><h4>Won and lost</h4><p>A move that meets the goal wins. A level is lost when the moves
+            run out, a countdown reaches 0, or no swap is left.</p></div>
+        </div>
+        <div class="callout info"><p>The solver, the generator, the editor pictures and the demo all use the same rules
+          (<span class="k">MatchRules</span>), so they always agree. Every move returns a report: each wave's matches (type,
+          size and shape), the bonus pieces made and fired, the gimmicks hit, the pieces dropped in.</p></div>
+      </div>
+
+      <div class="section">
+        <h2 id="index-modes">Two kinds of level</h2>
+        <table>
+          <tr><th></th><th>Puzzle mode</th><th>Refill levels</th></tr>
+          <tr><td>New pieces</td><td>none: what is on the board is all there is</td><td>drop in from the top of each fall path
+            (or its spawner), from a seeded stream</td></tr>
+          <tr><td>Goals</td><td>clear the board, collect, clear layers, bring exit pieces down</td><td>collect, clear layers,
+            bring down the exit pieces that drop in</td></tr>
+          <tr><td>Proven</td><td>par by an exact search</td><td>par by an exact search over the seeded stream</td></tr>
+          <tr><td>Stars from</td><td>the exact chance a player swapping at random wins</td><td>how often 400 seeded
+            half-greedy players win</td></tr>
+          <tr><td>No swap left</td><td>the level is lost</td><td>the board reshuffles (if no arrangement works, it is
+            lost)</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="index-gimmicks">Bonus pieces and gimmicks</h2>
+        <p>Names say what a thing does. Every one is optional, and the generator only keeps one that the puzzle really
+          uses.</p>
+        <table>
+          <tr><th>Name</th><th>What it does</th></tr>
+          <tr><td><strong>Line clear</strong></td><td>Made by four in a line; when cleared it clears its whole row (made by
+            four in a column) or column (four in a row).</td></tr>
+          <tr><td><strong>Pattern clear</strong></td><td>Made by an L, T or plus; clears a pattern round it (3 x 3 by
+            default; paint your own).</td></tr>
+          <tr><td><strong>Type clear</strong></td><td>Made by five in a line; swapped with a piece, clears every piece of that
+            type. Two bonus pieces swapped together set off a combo.</td></tr>
+          <tr><td><strong>Obstacle</strong> / shaped boards</td><td>Cells nothing enters (pieces rest on them), and cells
+            outside a diamond, heart, ring or your own shape.</td></tr>
+          <tr><td><strong>Layered cell</strong></td><td>1 to 3 layers under the piece; each match on the cell takes one off.
+            The goal to clear every layer.</td></tr>
+          <tr><td><strong>Breakable</strong> (a crate)</td><td>Fills its cell; 1 to 3 hits from matches beside it or bonus
+            pieces over it break it.</td></tr>
+          <tr><td><strong>Fixed piece</strong></td><td>Pinned to its cell: it can't be swapped and never falls; only a match
+            clears it.</td></tr>
+          <tr><td><strong>Type filter</strong></td><td>A cell that takes only one shape.</td></tr>
+          <tr><td><strong>Spreading</strong> (moss)</td><td>After a move that clears none of it, it takes a piece beside
+            it.</td></tr>
+          <tr><td><strong>Countdown piece</strong></td><td>Clear it before its number of moves runs out, or the level is
+            lost.</td></tr>
+          <tr><td><strong>Exit piece</strong> / exit cell</td><td>A piece that never matches; bring it down onto an exit and
+            it leaves the board.</td></tr>
+          <tr><td><strong>Conveyor belt</strong></td><td>After every move it carries the pieces on it one cell along its
+            loop.</td></tr>
+          <tr><td><strong>Portal</strong>, <strong>gravity</strong></td><td>A falling piece goes in one end and comes out the
+            other; or a cell's pieces fall up, left or right instead of down.</td></tr>
+          <tr><td><strong>Spawner</strong></td><td>Refill levels: new pieces drop in only from spawner cells.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="index-features">Features</h2>
+        <div class="feature-grid">
+          <div class="feature-card"><h4>Proven par</h4><p>The solver searches every position the puzzle can reach, so the
+            par is the true minimum, not an estimate. It also counts the best wins and the different first moves that start
+            one.</p></div>
+          <div class="feature-card"><h4>Difficulty in stars</h4><p>1 to 5 stars from the exact chance that a player swapping
+            at random wins (refill levels: seeded half-greedy players), measured so that each star covers about a fifth of
+            generated puzzles. Ask for a star count and the generator keeps trying until it gets one.</p></div>
+          <div class="feature-card"><h4>Boards</h4><p>3 to 12 cells each way, 2 to 6 piece types, square or shaped
+            (diamond, heart, ring or drawn by you), with obstacles if you like.</p></div>
+          <div class="feature-card"><h4>Every gimmick matters</h4><p>A crate, fixed piece, filter, belt or countdown is kept
+            only when the puzzle really uses it, and a bonus puzzle can be asked to need its bonus pieces.</p></div>
+          <div class="feature-card"><h4>Can this still be won?</h4><p><span class="k">MatchSolver.Outlook</span> answers it
+            for any position in play: won, can win (in how many moves, along which line), or can't (and why). It is the
+            hint, auto-solve and the dead-end warning in the demo.</p></div>
+          <div class="feature-card"><h4>27 measured presets</h4><p>From a first puzzle to expert, shapes, every gimmick and
+            refill levels, each measured on 24 seeds. Auto fixes settings that fight each other and says what it
+            changed.</p></div>
+          <div class="feature-card"><h4>Pictures</h4><p>Save any puzzle as a PNG or SVG: the colour view, a black and white
+            print view, or an answer key with every swap numbered, at any step of the solution, with a goal line and a
+            legend.</p></div>
+          <div class="feature-card"><h4>ScriptableObjects</h4><p>Save one puzzle as an asset or a whole set as a pack; they
+            load back exactly as they were saved.</p></div>
+          <div class="feature-card"><h4>A 3D demo</h4><p>Built in code: four modes, Endless puzzles made to order, four level
+            packs (48 levels), undo, hint, auto-solve, sounds and effects, in Built-in, URP and HDRP.</p></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 id="index-verified">Why "verified"</h2>
+        <ul>
+          <li><strong>The par is real.</strong> The solver searches every position, so a 7-move puzzle really takes 7 moves.
+            A search cut short is marked as not proven, and the generator never accepts one.</li>
+          <li><strong>It can be won.</strong> Puzzle-mode boards are built backwards from the goal, so they always have a win,
+            and the solver proves it. Refill levels are proven over their own seeded stream.</li>
+          <li><strong>Stars from measurement.</strong> The bands were set over hundreds of generated puzzles of each kind
+            (293 everyday, 234 with bonus pieces, 112 refill levels), so a star means the same on every puzzle, whatever its
+            goal or gimmicks.</li>
+          <li><strong>Misses are reported.</strong> When a star count, a par window or a gimmick can't be met, the puzzle's
+            notes say what happened and what you got instead.</li>
+          <li><strong>Checked.</strong> Over 250 headless tests on the rules, the solver and the generator, with break passes
+            that plant bugs in the code and confirm the tests catch them, and checks in real Unity of the editor tools and
+            the demo.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="index-start">Getting started</h2>
+        <div class="step"><div class="step-content"><h4>1. Open the generator</h4><p><strong>Window &gt; Living Failure &gt;
+          Simple Match &gt; Match Generator</strong>.</p></div></div>
+        <div class="step"><div class="step-content"><h4>2. Pick a preset and generate</h4><p>Press <strong>Presets</strong>,
+          pick one (for example <em>Gimmicks/Breakables</em>) and press <strong>Generate</strong>.</p></div></div>
+        <div class="step"><div class="step-content"><h4>3. Save it</h4><p>Save a puzzle as an asset, or the whole set as a
+          pack, and play it with your own game or the demo.</p></div></div>
+        <div class="step"><div class="step-content"><h4>4. Play the demo</h4><p>Open
+          <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play.</p></div></div>
+        <p>The <a href="#quick-start">Quick Start</a> goes through it step by step, with the code to generate and play a
+          puzzle yourself.</p>
+      </div>
+
+
+      <div class="hero" id="quick-start">
+    <h1>Quick Start</h1>
+    <p class="tagline">From the window to a playable level in a few minutes.</p>
+      </div>
+
+      <p>Five minutes from opening the window to a saved, proven puzzle, and the code to make and play one yourself.</p>
+
+      <div class="section">
+        <h2 id="quick-start-window">1. The generator window</h2>
+        <p>Open <strong>Window &gt; Living Failure &gt; Simple Match &gt; Match Generator</strong>. The settings are on the
+          left, and the puzzles you generate appear on the right, each with its picture, its par, its stars and anything the
+          generator wants you to know. Warnings under the settings say when two of them fight each other.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-generate">2. Generate a puzzle</h2>
+        <p>Press <strong>Presets</strong> and pick one, for example <em>Gimmicks/Breakables</em> (a 7 x 7 board with crates
+          to break). Press <strong>Generate</strong>. The puzzle is built and solved on a background thread, with a progress
+          bar, <strong>Cancel</strong>, and a time limit (<em>Time limit (s)</em>) so a hard request can never hang the
+          editor.</p>
+        <div class="callout tip"><p>Not sure two settings go together? Press <strong>Auto</strong>: it keeps what you asked
+          for and changes whatever fights it, and tells you what it changed and why.</p></div>
+        <p>Set <em>Batch count</em> above 1 to make several at once; <em>Seed</em> makes a puzzle you can make again (the same
+          settings and seed always give the same puzzle), and <em>Random</em> picks a fresh one.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-read">3. Read the result</h2>
+        <p>Select a puzzle on the right to see it large. The pane under the picture says, in words:</p>
+        <ul>
+          <li><strong>the goal</strong> ("clear the board in 6 moves"), the board and its gimmicks;</li>
+          <li><strong>par</strong>, the proven fewest moves, and the <strong>move limit</strong> (par plus <em>Moves to
+            spare</em>);</li>
+          <li><strong>stars</strong>, 1 to 5, and how many best wins there are;</li>
+          <li>every move of the solution, step by step (<em>Show swaps</em>, the arrows), with what each move did;</li>
+          <li><strong>notes</strong>: anything that couldn't be met exactly ("asked 4 stars, got 3") and what you got
+            instead.</li>
+        </ul>
+        <p>Hover a cell for what is on it. <em>Copy seed</em> and <em>Copy solution</em> copy them as text.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-save">4. Save it</h2>
+        <p>Press <strong>Save</strong>:</p>
+        <ul>
+          <li><strong>Current</strong> saves the selected puzzle as a <span class="k">MatchPuzzleAsset</span>;</li>
+          <li><strong>Pack (all)</strong> saves the whole set as a <span class="k">MatchPuzzlePack</span>, or <strong>Pack (on
+            target only)</strong> just the ones that met every request;</li>
+          <li><strong>Pictures of the set</strong> writes a PNG or SVG of each puzzle and its answer key.</li>
+        </ul>
+        <p>Select a saved asset to see the same picture and pane in its Inspector, with <strong>Verify</strong> (re-solve it
+          and check nothing changed) and <strong>Re-roll</strong> (a new seed, the same settings).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-code">5. From code</h2>
+        <p>Everything the window does is one call away. Make a puzzle from a preset (or your own
+          <span class="k">MatchSettings</span>):</p>
+<pre><code>using SimpleMatch;
+using UnityEngine;
+
+var settings = MatchPresets.Find("Gimmicks/Breakables").Make();
+settings.Seed = "level-1";                       // the same seed, the same puzzle
+MatchData puzzle = MatchGenerator.GenerateVerified(settings);
+
+Debug.Log($"{MatchNarration.GoalSentence(puzzle)}: par {puzzle.Par}, {puzzle.Difficulty} stars");
+foreach (var note in puzzle.Notes) Debug.Log(note);   // anything not met exactly</code></pre>
+        <p>A saved asset gives you the same <span class="k">MatchData</span>:</p>
+<pre><code>public MatchPuzzleAsset level;      // assign in the Inspector
+MatchData puzzle = level.Puzzle;
+MatchData third = myPack.Get(2);    // a MatchPuzzlePack</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-play">6. Play it</h2>
+        <p>The rules work on a <span class="k">MatchBoard</span> (what never changes) and a <span class="k">MatchState</span>
+          (the position). Each move returns a report of everything it did, wave by wave:</p>
+<pre><code>MatchBoard board = puzzle.Board();
+MatchState state = puzzle.Start();
+int moves = 0;
+
+// a swap of two neighbouring cells (cell = y * Width + x, row 0 at the bottom)
+var (a, b) = puzzle.SolutionMoves()[0];
+if (MatchRules.TrySwap(board, state, a, b, out MoveReport report, out string why))
+{
+    moves++;
+    Debug.Log($"cleared {report.Cleared} pieces in {report.Steps.Count} waves");
+}
+else Debug.Log("refused: " + why);           // "the swap makes no match", ...
+
+// can it still be won from here, and how?
+MatchOutlook outlook = MatchSolver.Outlook(puzzle, state, moves);
+if (outlook.Kind == OutlookKind.CanWin) Debug.Log($"{outlook.MovesNeeded} more, hint {outlook.Hint}");
+if (outlook.Kind == OutlookKind.CannotWin) Debug.Log("no way to win: " + outlook.Why);</code></pre>
+        <p>Every function is described in the <a href="#api-reference">API Reference</a>; how the settings shape a puzzle
+          is in <a href="#generating">Generating</a>.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="quick-start-demo">7. The demo</h2>
+        <p>Open <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play. Pick a mode, then
+          Endless (a new puzzle made to order) or a level of its pack. Tap a piece and then a neighbour (or drag it) to swap.
+          <strong>U</strong> undoes, <strong>R</strong> restarts, <strong>H</strong> shows a hint, <strong>F</strong>
+          solves. The <a href="#demos">Demos</a> page shows how it is built, so you can take what you need.</p>
+      </div>
+
+
+      <div class="hero" id="generating">
+    <h1>Generating</h1>
+    <p class="tagline">Every setting, what it does, and what was measured.</p>
+      </div>
+
+      <p>Every setting below is a field of <span class="k">MatchSettings</span> and a control in the Match Generator window.
+        Where a setting says "measured", the number comes from the harness that tests the asset, over hundreds of generated
+        puzzles.</p>
+
+      <div class="section">
+        <h2 id="generating-how">How a puzzle is made</h2>
+        <p>A <strong>puzzle-mode</strong> board without bonus pieces is <strong>built backwards</strong>: starting from an
+          empty board, the builder adds lines of three, one at a time, each one undoing a swap, so the board always has a
+          win and the builder knows one. The solver then searches every position to prove the true par. A board with bonus
+          pieces is <strong>dealt</strong> instead (every cell gets a piece, no line at the start), and kept only when the
+          solver proves the goal can be reached. A <strong>refill level</strong> is dealt too, with new pieces drawn from a
+          seeded stream, and proven over that stream.</p>
+        <p>Then the gimmicks you asked for are placed where the known win still works, each one checked, the move limit is
+          set, and the stars are measured. <span class="k">MatchGenerator.GenerateVerified</span> tries more seeds until
+          every target is met, or returns the closest puzzle with a note.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-board">The board</h2>
+        <table>
+          <tr><th>Setting</th><th>What it does</th></tr>
+          <tr><td><span class="k">Width</span>, <span class="k">Height</span></td><td>3 to 12 cells each way: the most room
+            the puzzle may use.</td></tr>
+          <tr><td><span class="k">Outline</span></td><td>Full (the rectangle), Cross, Ring, Diamond, Circle, Heart, L, T, U, or
+            Custom (<span class="k">CustomShape</span>: rows of text, top row first, '#' a cell). Cells outside the outline
+            are a floor the pieces rest on.</td></tr>
+          <tr><td><span class="k">Types</span></td><td>2 to 6 piece types (each its own shape and colour).</td></tr>
+          <tr><td><span class="k">Lines</span></td><td>How many lines of three a built puzzle is made from (2 to 15): it
+            holds 3 x Lines pieces, and Lines is the most moves a win needs. Measured: up to 12 lines the par is proven in
+            under 0.3 s, 13 to 15 take 1 to 10 s. The par comes out below the lines (on 1,440 built puzzles it was at most
+            the lines minus 1).</td></tr>
+          <tr><td><span class="k">Obstacles</span></td><td>The share of cells scattered as obstacles (0 to 0.3). After the
+            build, an obstacle with nothing resting on it is removed, so a puzzle keeps a third to a half of them. Measured:
+            up to 0.2 every board builds and puzzles get harder; at 0.3 a fifth to two fifths of builds fail.</td></tr>
+          <tr><td><span class="k">Fit</span></td><td>Cut a full board down to the cells the puzzle uses (empty side columns,
+            the rows above the tallest stack). Nothing is lost: without refills no piece ever reaches them.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-goals">Goals and the move limit</h2>
+        <table>
+          <tr><th>Goal</th><th>What the player must do</th></tr>
+          <tr><td><strong>ClearAll</strong> (the default)</td><td>Clear every piece (and every crate).</td></tr>
+          <tr><td><strong>Collect</strong></td><td>Clear a number of pieces of one type (<span class="k">CollectType</span>,
+            -1 = the generator picks the one that takes the most moves; <span class="k">CollectCount</span>, 0 = every one).
+            Measured: about half the moves of clearing the board, but wins can run 2 to 5 moves longer than par, so the move
+            limit is what makes it a puzzle.</td></tr>
+          <tr><td><strong>ClearLayers</strong></td><td>Take every layer off the layered cells (pieces may be left). See
+            Layers below.</td></tr>
+          <tr><td><strong>ExitAll</strong></td><td>Bring every exit piece down to an exit (pieces may be left).</td></tr>
+        </table>
+        <p><span class="k">MoveSlack</span> (0 to 5) is the moves allowed beyond par: the move limit is par plus it. On
+          clear-all puzzles almost every win takes exactly par moves, so it barely matters there; on collect puzzles it
+          decides the difficulty. Refill levels use <span class="k">RefillMoveSlack</span> (default 2).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-bonus">Bonus pieces</h2>
+        <p>With <span class="k">Bonuses</span> on, four in a line leaves a <strong>Line clear</strong>, an L, T or plus a
+          <strong>Pattern clear</strong>, five in a line a <strong>Type clear</strong>; two swapped together make a combo.
+          A bonus puzzle is dealt, not built, so <span class="k">Lines</span> and <span class="k">Fit</span> don't apply.
+          Measured: with bonuses, 75 to 100% of full boards from 6 x 6 up can be cleared, while plain lines clear 0 to 3% of
+          them.</p>
+        <ul>
+          <li><span class="k">NeedBonuses</span> (on by default, clear all): keep only boards that plain lines alone can't
+            clear, so the player has to make bonus pieces and use them.</li>
+          <li><span class="k">Pattern</span>: what a Pattern clear hits, painted on a 7 x 7 grid
+            (<span class="k">MatchPattern</span>: Square, the default 3 x 3, Plus, Diagonal, Diamond, Big, or
+            <span class="k">MatchPattern.FromRows</span>).</li>
+          <li>Time (measured, proof and exact odds included): 6 x 6 boards 0.1 to 1.3 s, 7 x 7 with 5 types 1 to 3 s, 7 x 7
+            with 4 types about 14 s; bigger boards mostly can't be proven.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-gimmicks">Gimmicks</h2>
+        <p>Each gimmick is placed only where the win the generator knows still works, and kept only when it changes the
+          puzzle, so every one matters. Placing them at random instead leaves most boards unsolvable (measured below).</p>
+        <table>
+          <tr><th>Setting</th><th>What it adds, and what was measured</th></tr>
+          <tr><td><span class="k">LayerShare</span>, <span class="k">MaxLayers</span> (goal ClearLayers)</td><td>Layers on a
+            share of the cells a known clear clears (0.05 to 1), 1 to 3 each. Every puzzle builds in milliseconds; from 0.6
+            up random players win half as often or less.</td></tr>
+          <tr><td><span class="k">Breakables</span>, <span class="k">MaxHits</span></td><td>Crates on cells that stay empty
+            for good, next to where the known swaps make matches; 1 to 3 hits each. Every such puzzle can be cleared, par
+            rises a little and random players win up to half as often. (Slid under columns instead, only 35 to 68% can be
+            cleared.)</td></tr>
+          <tr><td><span class="k">FixedPieces</span></td><td>A share of the safe pieces fixed (safe: the known win plays out
+            the same with it pinned). Every puzzle stays solvable (random pieces: 0 to 38%); par rises by 0.2 to 0.8, but a
+            random player wins a little more often (fewer pieces to swap wrongly), so stars can drop.</td></tr>
+          <tr><td><span class="k">Filters</span></td><td>A share of the safe cells filtered to their piece's type. Every
+            puzzle stays solvable (random cells: 0 to 14%); par rises by 0.1 to 0.4.</td></tr>
+          <tr><td><span class="k">Spreading</span></td><td>Up to 8 moss cells (clear all, bonuses off), each kept only when
+            the known swaps still clear the board. A puzzle keeps 3 to 4 at most. A random player wins 2 to 7 times less
+            often: moss makes puzzles harder, since every move that leaves it alone feeds it.</td></tr>
+          <tr><td><span class="k">Countdowns</span>, <span class="k">CountdownSlack</span></td><td>Up to 8 countdown pieces,
+            each given the move the known win clears it on, plus 0 to 3 moves of slack. With no slack they make puzzles much
+            harder (random players win 2 to 20 times less often); one move of slack mostly takes that away.</td></tr>
+          <tr><td><span class="k">ExitPieces</span></td><td>Up to 4 exit pieces on top of stacks, with an exit at the
+            stack's floor (built puzzles). With ExitAll the par is 3 to 5.</td></tr>
+          <tr><td><span class="k">Belts</span></td><td>Up to 3 conveyor belts (a row that wraps, or a small rectangle's
+            ring): 8 tried per belt, each proven, the hardest kept. Random players win 3 to 12 times less often.</td></tr>
+        </table>
+        <div class="callout info"><p>Portals, gravity and spawners are in the rules, the solver, the pictures and the demo,
+          but the generator doesn't place them: measured, portals mostly made shortcuts and gravity changed little. Set them
+          on a puzzle yourself (<span class="k">MatchData.Portal</span>, <span class="k">Gravity</span>,
+          <span class="k">Spawner</span>) and the solver proves it as usual.</p></div>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-refill">Refill levels</h2>
+        <p>With <span class="k">Refill</span> on, the board is dealt full and new pieces drop in from the top of each fall
+          path after every fall, from a seeded stream, so a level plays the same every time. When no swap is left the board
+          reshuffles (the same pieces, no line, a swap guaranteed). Goals: Collect (0 = a third of the board's cells),
+          ClearLayers, or ExitAll with <span class="k">ExitDrops</span> exit pieces dropping in (1 to 8, at most 2 on the
+          board at once). Clear all can't be met with refills and becomes Collect. Bonus pieces on or off. Crates, fixed
+          pieces, filters, moss, countdowns, exit pieces and belts are switched off on refill levels.</p>
+        <p>Par is proven over the stream; the stars come from how often 400 seeded half-greedy players win within the move
+          limit (par plus <span class="k">RefillMoveSlack</span>, default 2: more moves to spare make a level easier, and
+          its stars say so). Measured: par is proven on almost every level up to 8 x 8 with 5 types, in up to about 7 s; a
+          large or hard level can take 10 to 30 s.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-stars">Stars</h2>
+        <p>1 to 5 stars, each covering about a fifth of generated puzzles of its kind. There are three scales:</p>
+        <table>
+          <tr><th>Scale</th><th>From</th><th>1 star ... 5 stars</th></tr>
+          <tr><td>Everyday (bonuses off)</td><td>the exact chance a player swapping at random wins within the move limit
+            (measured over 293 puzzles)</td><td>1: wins half the time or more; 2: 20%+; 3: 6%+; 4: 1.4%+; 5: less</td></tr>
+          <tr><td>Bonus (bonuses on)</td><td>the same chance (a random player almost never clears a full board, so it has its
+            own bands; 234 puzzles)</td><td>1: 0.07%+; 2: 0.02%+; 3: 0.005%+; 4: 0.0004%+; 5: less</td></tr>
+          <tr><td>Refill</td><td>400 seeded half-greedy players (112 refill levels, at par + 2)</td><td>1: they win 70%+;
+            2: 30%+; 3: 9%+; 4: 1.3%+; 5: less</td></tr>
+        </table>
+        <p>One scale per side, whatever the goal or gimmick, so a star means the same on every puzzle. The chance ranks puzzles
+          the way a careful player does (rank agreement 0.95, measured), while par alone ranks them poorly (0.68).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-targets">Targets and the search</h2>
+        <table>
+          <tr><th>Setting</th><th>What it does</th></tr>
+          <tr><td><span class="k">TargetDifficulty</span></td><td>1 to 5 stars (0 = any): more seeds are tried until one
+            rates that.</td></tr>
+          <tr><td><span class="k">MinPar</span>, <span class="k">MaxPar</span></td><td>A par window (MaxPar 0 = no
+            limit).</td></tr>
+          <tr><td><span class="k">MaxAttempts</span></td><td>How many seeds to try before returning the closest puzzle (1 to
+            500).</td></tr>
+          <tr><td><span class="k">StateBudget</span></td><td>The most positions the solver may search to prove the par (1,000
+            to 20,000,000). A search cut short is never accepted as proven.</td></tr>
+          <tr><td><span class="k">Seed</span></td><td>The same seed and settings always give the same puzzle; empty = a fresh
+            random seed.</td></tr>
+        </table>
+        <p>In the window, <em>Time limit (s)</em> stops a generation that runs too long (it throws a
+          <span class="k">TimeoutException</span> naming the limit), and Cancel stops it at once; from code, pass a
+          <span class="k">CancellationToken</span> and a limit to <span class="k">GenerateVerified</span>.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-presets">Presets and Auto</h2>
+        <p>27 presets in the window's <strong>Presets</strong> menu (<span class="k">MatchPresets.All</span>), each measured
+          on 24 seeds, with its par and stars in its description:</p>
+        <ul>
+          <li><strong>Puzzles</strong>: First puzzle (5 x 5, 3 shapes), Small, Medium, Large (9 x 9, 5 shapes).</li>
+          <li><strong>Difficulty</strong>: Easy, Medium, Hard, Expert (aiming for 2 to 5 stars).</li>
+          <li><strong>Shapes</strong>: Diamond, Heart, Ring, Obstacles.</li>
+          <li><strong>Goals</strong>: Collect.</li>
+          <li><strong>Bonus pieces</strong>: Clear with bonuses, Collect.</li>
+          <li><strong>Gimmicks</strong>: Layers, Breakables, Fixed pieces, Type filters, Spreading, Countdowns, Exit pieces,
+            Conveyor belts.</li>
+          <li><strong>Refill</strong>: Collect, Collect with bonuses, Layers, Exit drops.</li>
+        </ul>
+        <p><strong>Auto</strong> (<span class="k">MatchPresets.Tune</span>) returns a copy of your settings with whatever
+          fights itself fixed, and a sentence per change. It keeps the gimmick you asked for and changes what can't live with
+          it: refill levels turn clear all into collect and switch off the gimmicks they don't have; too many lines for the
+          board, a star or par target the board can't reach, a custom outline that doesn't parse. Without Auto the builder
+          does the same, drops what doesn't fit, and says so in the puzzle's notes.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generating-notes">When a request can't be met</h2>
+        <p>The generator never quietly hands you something else. <span class="k">MatchData.Notes</span> lists anything it
+          couldn't do exactly, for example "No puzzle met the settings in 20 tries (... difficulty 5 ...): this is the closest",
+          or "Breakables apply to clear-all puzzles (breaking them is part of clearing the board): this puzzle has none.",
+          and <span class="k">MatchAudit.MeetsRequest</span> says whether a puzzle met every request
+          (<span class="k">MatchAudit.Missing</span> lists what it missed). In the window, the Save menu can save only the
+          puzzles on target. <span class="k">MatchAudit.Verify</span> re-solves any puzzle and says whether its stored
+          verdict still holds.</p>
+      </div>
+
+
+      <div class="hero" id="api-reference">
+    <h1>API Reference</h1>
+    <p class="tagline">The public types, with samples that compile against the asset.</p>
+      </div>
+
+      <p>The public types you are most likely to use. Every member has XML documentation in the source, so your IDE shows
+        the details (and the measurements behind them) as you type.</p>
+
+      <div class="section">
+        <h2 id="api-reference-layout">Assemblies and numbers</h2>
+        <table>
+          <tr><th>Assembly</th><th>Namespace</th><th>What it holds</th></tr>
+          <tr><td><span class="k">SimpleMatch</span></td><td><span class="k">SimpleMatch</span></td><td>The core: settings,
+            generator, rules, solver, pictures, ScriptableObjects. Pure C# apart from the ScriptableObjects, with no package
+            dependencies, so it runs on a worker thread and in your own tests.</td></tr>
+          <tr><td><span class="k">SimpleMatch.Demo</span></td><td><span class="k">SimpleMatch.Demo</span></td><td>The 3D
+            demo (Input System, Unity UI, and HDRP when it is installed).</td></tr>
+          <tr><td><span class="k">SimpleMatch.Editor</span></td><td><span class="k">SimpleMatch.Editor</span></td><td>The
+            Match Generator window, inspectors, the documentation menu, the build look keeper.</td></tr>
+        </table>
+        <p>A cell is a number: <span class="k">y * Width + x</span>, with row 0 at the <strong>bottom</strong> (pieces fall
+          toward it). A piece is an <span class="k">sbyte</span>: -1 empty, otherwise its type (0 to Types - 1) in the low 4
+          bits and its bonus kind above them; <span class="k">MatchPiece</span> reads and makes them
+          (<span class="k">MatchPiece.Make(type, BonusKind.LineRow)</span>, <span class="k">MatchPiece.Exit</span> for an exit
+          piece). A solution is stored flat: a0, b0, a1, b1 ...</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-generator">MatchGenerator</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">GenerateVerified(settings)</span></td><td>A puzzle that meets every hard requirement
+            (solvable, par proven, inside the par window, on the star target, not a freebie). Tries the seed first, then
+            seed#1, seed#2 ... up to <span class="k">MaxAttempts</span>; if none works, the closest, with a note.</td></tr>
+          <tr><td><span class="k">GenerateVerified(settings, token, limitSeconds)</span></td><td>The same, stoppable: a
+            cancelled <span class="k">CancellationToken</span> throws <span class="k">OperationCanceledException</span>, and
+            past the limit (0 = none) a <span class="k">TimeoutException</span>.</td></tr>
+          <tr><td><span class="k">Generate(settings)</span></td><td>One attempt with exactly this seed, sound or not.</td></tr>
+          <tr><td><span class="k">GenerateBatch(settings, count)</span></td><td>A set of verified puzzles with seeds
+            seed-0, seed-1 ...</td></tr>
+          <tr><td><span class="k">IsSound(m, settings)</span></td><td>True when a puzzle meets the settings' hard
+            requirements.</td></tr>
+        </table>
+<pre><code>using SimpleMatch;
+
+var s = new MatchSettings { Width = 7, Height = 7, Types = 4, Lines = 8, Breakables = 0.5f, TargetDifficulty = 3 };
+s.Seed = "crates-1";
+MatchData m = MatchGenerator.GenerateVerified(s);
+Debug.Log($"{MatchAudit.Short(m)}");   // "7 x 7, clear all (4 breakables), par 4 in 4 moves, 3 stars"
+foreach (var note in m.Notes) Debug.Log(note);</code></pre>
+        <p>Generation is pure C#: run it on a worker thread (<span class="k">Task.Run</span>) to keep the game responsive, as
+          the window and the demo do. On WebGL, which has no threads, call it directly.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-data">MatchData</h2>
+        <p>One puzzle: the board, the start, the goal, the gimmicks, and what the solver proved. Plain serializable fields,
+          so a ScriptableObject holds it. Null arrays mean "none".</p>
+        <table>
+          <tr><th>Field</th><th>What it holds</th></tr>
+          <tr><td><span class="k">Width</span>, <span class="k">Height</span>, <span class="k">Types</span></td><td>The board
+            size and how many piece types.</td></tr>
+          <tr><td><span class="k">Cells</span></td><td>The piece in every cell at the start (-1 = empty).</td></tr>
+          <tr><td><span class="k">Blocked</span>, <span class="k">Outside</span></td><td>Cells nothing enters; those outside
+            the board's shape (the rest are obstacles, <span class="k">IsObstacle(cell)</span>).</td></tr>
+          <tr><td><span class="k">Goal</span></td><td>A <span class="k">MatchGoal</span>:
+            <span class="k">ClearAll()</span>, <span class="k">Collect(types, type, count)</span>,
+            <span class="k">ClearLayers()</span>, <span class="k">ExitAll()</span>.</td></tr>
+          <tr><td><span class="k">Bonuses</span>, <span class="k">Pattern</span></td><td>Bonus pieces on, and what a
+            Pattern clear hits.</td></tr>
+          <tr><td><span class="k">Layers</span>, <span class="k">Breakable</span>, <span class="k">Fixed</span>,
+            <span class="k">Filter</span>, <span class="k">Spread</span>, <span class="k">Countdown</span>,
+            <span class="k">Exit</span>, <span class="k">Belt</span>, <span class="k">Portal</span>,
+            <span class="k">Gravity</span></td><td>The gimmicks, one array each (index = cell). Belt and Portal hold the next
+            cell; Gravity 0 down, 1 up, 2 left, 3 right.</td></tr>
+          <tr><td><span class="k">Refill</span>, <span class="k">DropSeed</span>, <span class="k">Spawner</span>,
+            <span class="k">ExitDrops</span>, <span class="k">ExitDropMax</span></td><td>Refill levels: on, the stream's seed,
+            spawner cells, exit pieces that drop in.</td></tr>
+          <tr><td><span class="k">Solvable</span>, <span class="k">Complete</span>, <span class="k">Par</span></td><td>The
+            verdict: can it be won, did the search finish (Par proven), the fewest moves.</td></tr>
+          <tr><td><span class="k">MoveLimit</span></td><td>Par plus the moves to spare.</td></tr>
+          <tr><td><span class="k">Solution</span>, <span class="k">SolutionMoves()</span></td><td>A fewest-move win (flat,
+            or as (a, b) swaps).</td></tr>
+          <tr><td><span class="k">Solutions</span>, <span class="k">FirstMoves</span></td><td>How many fewest-move wins, and
+            how many first swaps start one.</td></tr>
+          <tr><td><span class="k">RandomWin</span>, <span class="k">CarefulWin</span>, <span class="k">BotWin</span>,
+            <span class="k">OddsExact</span></td><td>The odds the stars come from.</td></tr>
+          <tr><td><span class="k">Difficulty</span></td><td>1 to 5 stars (0 = the par isn't proven).</td></tr>
+          <tr><td><span class="k">NeedsBonuses</span></td><td>Proven: plain lines alone can't reach the goal.</td></tr>
+          <tr><td><span class="k">Seed</span>, <span class="k">Settings</span>, <span class="k">Notes</span></td><td>How it
+            was made (the same seed and settings rebuild it exactly), and anything worth knowing about it.</td></tr>
+          <tr><td><span class="k">Board()</span>, <span class="k">Start()</span></td><td>The board (it never changes in play)
+            and a fresh copy of the start position, ready for <span class="k">MatchRules</span>.</td></tr>
+        </table>
+        <p><span class="k">MatchBoard</span> holds what never changes in play (size, types, blocked cells, filters, exits,
+          portals, belts, gravity, spawners, bonuses on); <span class="k">MatchState</span> holds what does (the pieces,
+          layers, crates, fixed pieces, moss, countdowns, the refill stream, what has been collected).
+          <span class="k">MatchState.Clone()</span> copies a position.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-play">Playing: MatchRules</h2>
+        <p>The rules the generator and the solver use, so a game built on them always agrees with the par.</p>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">TrySwap(board, state, a, b, out report, out reason)</span></td><td>Make a swap and resolve
+            every wave (cascades, bonus pieces, gimmicks, belts, moss, countdowns, refills, a reshuffle). False, with the
+            reason in words and nothing changed, when it isn't allowed.</td></tr>
+          <tr><td><span class="k">Refusal(board, state, a, b)</span></td><td>Why a swap isn't allowed, or null: not
+            neighbours, an empty or blocked cell, the same type, a fixed piece or filter, no match made.</td></tr>
+          <tr><td><span class="k">LegalSwaps(board, state)</span></td><td>Every allowed swap from here.</td></tr>
+          <tr><td><span class="k">FindMatches(board, state)</span></td><td>The groups matched right now.</td></tr>
+          <tr><td><span class="k">Validate(m, out error)</span></td><td>True when a puzzle's data can be played (sizes, types,
+            every piece resting, no match at the start, a goal that fits).</td></tr>
+          <tr><td><span class="k">MatchSolver.Met(board, state, goal, mostLeft, counts)</span></td><td>The goal check the
+            solver uses (<span class="k">mostLeft</span> from <span class="k">goal.MostLeft(board, start)</span>,
+            <span class="k">counts</span> scratch of Types + 1).</td></tr>
+          <tr><td><span class="k">MatchState.Exploded</span></td><td>True once a countdown has run out (the level is
+            lost).</td></tr>
+        </table>
+<pre><code>MatchBoard board = m.Board();
+MatchState state = m.Start();
+int[] mostLeft = m.Goal.MostLeft(board, m.Start()), counts = new int[board.Types + 1];
+int moves = 0;
+
+bool Play(int a, int b)
+{
+    if (!MatchRules.TrySwap(board, state, a, b, out MoveReport report, out string why)) { Debug.Log(why); return false; }
+    moves++;
+    if (MatchSolver.Met(board, state, m.Goal, mostLeft, counts)) Debug.Log("won");
+    else if (state.Exploded || moves &gt;= m.MoveLimit) Debug.Log("lost");
+    return true;
+}</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-trace">Moves, waves and beats</h2>
+        <p>A <span class="k">MoveReport</span> says what a move did. <span class="k">Steps</span> holds one
+          <span class="k">CascadeStep</span> per wave: the groups matched, the cells cleared, the bonus pieces made
+          (<span class="k">Made</span>) and fired (<span class="k">Fired</span>), the layers, crates and moss hit, the exit
+          pieces that left, the new pieces dropped in. The report also has <span class="k">Cleared</span>,
+          <span class="k">Combo</span>, <span class="k">CascadeDepth</span>, <span class="k">SpreadTo</span>,
+          <span class="k">Exploded</span> and <span class="k">Reshuffled</span>.</p>
+        <p>Set <span class="k">Trace</span> before the move and <span class="k">Beats</span> gets every step in order, each a
+          <span class="k">MoveBeat</span> with its <span class="k">Kind</span> (Swap, Clear, Fall, Exit, Drop, Belt, Spread,
+          Tick, Reshuffle), the pieces it moved (<span class="k">Moves</span>: from, to), the cells it is about, and a copy of
+          the position after it (<span class="k">After</span>). That is what a game animates; the demo's
+          <span class="k">MatchGame</span> plays them one by one.</p>
+<pre><code>var report = new MoveReport { Trace = true };
+if (MatchRules.Refusal(board, state, a, b) == null)
+{
+    MatchRules.ApplySwap(board, state, a, b, report);
+    foreach (MoveBeat beat in report.Beats)
+        Debug.Log($"{beat.Kind}: {beat.Moves.Count} pieces moved, {beat.Cells.Count} cells");
+}</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-solver">Solving and rating</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchSolver.Solve(board, start, goal, maxStates)</span></td><td>The fewest moves to the
+            goal, or proof there are none. A <span class="k">SolveResult</span>: <span class="k">Status</span> (Solved,
+            Unsolvable, NotWithinLimit, OutOfBudget), <span class="k">Par</span>, <span class="k">Moves</span>,
+            <span class="k">Solutions</span>, <span class="k">FirstMoves</span>, <span class="k">States</span>,
+            <span class="k">AtLeast</span>. Puzzle mode; refill levels are proven by the generator over their stream.</td></tr>
+          <tr><td><span class="k">MatchDifficulty.Stars(m)</span>, <span class="k">StarsFor(chance, scale)</span>,
+            <span class="k">BandsFor(scale)</span></td><td>The stars and the three scales' bands
+            (<span class="k">StarScale</span> Everyday, Bonus, Refill).</td></tr>
+          <tr><td><span class="k">MatchAnalysis.RandomWin(m, plays, limit)</span></td><td>The share of seeded random players
+            who win within a limit (an estimate; the stamped <span class="k">RandomWin</span> is exact when
+            <span class="k">OddsExact</span>).</td></tr>
+          <tr><td><span class="k">MatchBots.HalfGreedyWin(m, plays, limit)</span></td><td>The same for half-greedy players
+            (what refill levels are rated on).</td></tr>
+          <tr><td><span class="k">MatchCancel.Use(token)</span></td><td>Make any long call (a re-solve, a Verify) stoppable on
+            this thread: <span class="k">using (MatchCancel.Use(token)) MatchAudit.Verify(...)</span>.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-outlook">Can it still be won?</h2>
+        <p><span class="k">MatchSolver.Outlook(m, state, movesMade, maxStates = 200000, board = null)</span> answers it for
+          any position in play, puzzle mode and refill levels alike. A <span class="k">MatchOutlook</span>:</p>
+        <table>
+          <tr><th>Member</th><th>What it holds</th></tr>
+          <tr><td><span class="k">Kind</span></td><td><span class="k">Won</span>, <span class="k">CanWin</span>,
+            <span class="k">CannotWin</span> or <span class="k">Unknown</span> (the budget ran out; it is never
+            wrong).</td></tr>
+          <tr><td><span class="k">MovesNeeded</span>, <span class="k">Moves</span>, <span class="k">Hint</span></td><td>The
+            fewest moves still needed, one line that does it, and its first swap (a hint; auto-solve plays the line).</td></tr>
+          <tr><td><span class="k">Why</span></td><td>Why it can't be won, in the player's words: a countdown ran out, no
+            moves left, no swap left, the goal can't be met any more, or "it needs more than the 3 moves left".</td></tr>
+          <tr><td><span class="k">OnSolution</span></td><td>The position is still on the stored solution: the answer needed
+            no search.</td></tr>
+        </table>
+<pre><code>MatchOutlook o = MatchSolver.Outlook(m, state, moves, 200_000, board);
+if (o.Kind == OutlookKind.CannotWin) Debug.Log("This can't be won any more: " + o.Why);
+else if (o.Kind == OutlookKind.CanWin &amp;&amp; o.Hint.HasValue) Debug.Log($"hint: swap {o.Hint.Value.a} and {o.Hint.Value.b}");</code></pre>
+        <p>It can take a moment on big refill boards, so ask it on a worker thread, as the demo does (a newer position cancels
+          an older ask through <span class="k">MatchCancel</span>).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-byhand">A puzzle by hand</h2>
+        <p>Fill a <span class="k">MatchData</span>, check it with <span class="k">MatchRules.Validate</span>, and
+          <span class="k">MatchAudit.Verify</span> solves it and stamps its par, odds and stars, as the generator would.</p>
+<pre><code>// 4 x 2, two types: swapping the third column's pieces makes two lines of four
+var hand = new MatchData
+{
+    Width = 4, Height = 2, Types = 2,
+    Cells = new sbyte[] { 0, 0, 1, 0,     // row 0 (the bottom)
+                          1, 1, 0, 1 },   // row 1
+    Goal = MatchGoal.ClearAll(),
+};
+if (!MatchRules.Validate(hand, out string error)) Debug.Log(error);
+else
+{
+    MatchAudit.Verify(hand, out string before, out string after);
+    Debug.Log(after);   // "4 x 2, clear all, par 1 in 1 moves, 2 stars"
+}</code></pre>
+        <p>Gimmicks are arrays of the board's size (for example <span class="k">hand.Fixed = new bool[8]</span>, then
+          <span class="k">hand.Fixed[1] = true</span>). The generator doesn't place portals, gravity or spawners, but the rules,
+          the solver, the pictures and the demo all play them, so set them by hand like this.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-presets">Presets, Auto and audit</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchPresets.All</span>, <span class="k">Find(name)</span></td><td>The 27 presets
+            (<span class="k">MatchPreset</span>: <span class="k">Name</span> such as "Gimmicks/Breakables",
+            <span class="k">Make()</span> a fresh copy of its settings).</td></tr>
+          <tr><td><span class="k">MatchPresets.Tune(settings, changes)</span></td><td>Auto: a copy with settings that fight
+            each other fixed, a sentence per change.</td></tr>
+          <tr><td><span class="k">MatchAudit.Verify(m, out before, out after)</span></td><td>Re-solve and restamp; true when
+            the verdict changed.</td></tr>
+          <tr><td><span class="k">MatchAudit.MeetsRequest(m)</span>, <span class="k">Missing(m)</span></td><td>Did a puzzle
+            get everything its settings asked for, and what did it miss ("par 4, asked 6 or more").</td></tr>
+          <tr><td><span class="k">MatchAudit.Reroll(m)</span></td><td>A fresh puzzle from the same settings and a new
+            seed.</td></tr>
+          <tr><td><span class="k">MatchAudit.Short(m)</span>, <span class="k">IsFreebie(m)</span></td><td>One line about a
+            puzzle; true when a player swapping at random always wins.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-pictures">Pictures and words</h2>
+        <table>
+          <tr><th>Member</th><th>What it does</th></tr>
+          <tr><td><span class="k">MatchExport.Png(m, options)</span>, <span class="k">Svg(m, options)</span>,
+            <span class="k">Pixels(...)</span></td><td>A picture of the puzzle (<span class="k">ExportOptions</span>:
+            <span class="k">Size</span>, <span class="k">Style</span>, <span class="k">Step</span> for a position along the
+            solution, <span class="k">Goal</span> line, <span class="k">Legend</span>). Styles: AsShown (colour and shape), Printable (black on white, shape alone) and AnswerKey, which numbers the
+            solution's swaps on the board.</td></tr>
+          <tr><td><span class="k">MatchExport.StateAt(m, step)</span></td><td>The position after the first steps of the
+            solution.</td></tr>
+          <tr><td><span class="k">MatchExport.TypeRgb(type)</span>, <span class="k">TypeShapes</span>,
+            <span class="k">ShapeParts(type)</span></td><td>Each type's colour, its shape in words, and its outline (the demo
+            extrudes these).</td></tr>
+          <tr><td><span class="k">MatchNarration.GoalSentence(m)</span></td><td>"clear the board in 5 moves".</td></tr>
+          <tr><td><span class="k">MatchNarration.Frames(m)</span></td><td>The start and each move of the solution, with a
+            caption ("Move 2: swap (3, 1) and (3, 2) - clears 6 pieces in 2 waves, makes a Line clear (row).").</td></tr>
+          <tr><td><span class="k">MatchNarration.Summary(m)</span>, <span class="k">Gimmicks(m)</span>,
+            <span class="k">Describe(m, cell, state)</span></td><td>The board and its gimmicks in words, and what is on one
+            cell.</td></tr>
+        </table>
+<pre><code>byte[] png = MatchExport.Png(m, new ExportOptions { Size = 1024, Goal = true, Legend = true });
+System.IO.File.WriteAllBytes("puzzle.png", png);</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-assets">ScriptableObjects</h2>
+        <table>
+          <tr><th>Type</th><th>What it is</th></tr>
+          <tr><td><span class="k">MatchPuzzleAsset</span></td><td>One puzzle (<span class="k">Puzzle</span>, with
+            <span class="k">Par</span>, <span class="k">MoveLimit</span>, <span class="k">Difficulty</span>,
+            <span class="k">Refill</span> shown in the inspector).</td></tr>
+          <tr><td><span class="k">MatchPuzzlePack</span></td><td>A set of puzzles (<span class="k">Puzzles</span>,
+            <span class="k">Get(i)</span>, <span class="k">Replace(i, m)</span>).</td></tr>
+          <tr><td><span class="k">IPuzzleProvider</span></td><td>Both: <span class="k">AppendTo(levels)</span> adds their
+            puzzles to a level list.</td></tr>
+          <tr><td><span class="k">PuzzleAssets.CreatePuzzle(m)</span>, <span class="k">CreatePack(list, name)</span></td><td>Wrap
+            puzzles at runtime (not saved to disk).</td></tr>
+        </table>
+        <p>Unity can't store a null array, so a stored puzzle's "none" comes back as an empty array;
+          <span class="k">MatchData.Normalize()</span> puts it back (the assets do it when they load).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="api-reference-demo">Demo components</h2>
+        <p>In <span class="k">SimpleMatch.Demo</span>. See <a href="#demos-own">Demos</a> for how they fit together.</p>
+        <table>
+          <tr><th>Type</th><th>Members</th></tr>
+          <tr><td><span class="k">MatchGame</span></td><td><span class="k">Begin(m)</span>, <span class="k">Swap(a, b)</span>,
+            <span class="k">Tap(screen)</span>, <span class="k">Drag(from, to)</span>, <span class="k">Undo()</span>,
+            <span class="k">Restart()</span>, <span class="k">ShowHint()</span>, <span class="k">StartAutoSolve()</span>,
+            <span class="k">StopAutoSolve()</span>, <span class="k">Turn</span> / <span class="k">Tilt</span> /
+            <span class="k">Zoom</span> / <span class="k">ResetView</span>; <span class="k">State</span>,
+            <span class="k">Moves</span>, <span class="k">MovesLeft</span>, <span class="k">IsWon</span>,
+            <span class="k">LostReason</span>, <span class="k">Busy</span>, <span class="k">Thinking</span>; events
+            <span class="k">Step</span>, <span class="k">Moved</span>, <span class="k">Refused</span>,
+            <span class="k">Won</span>, <span class="k">Lost</span>, <span class="k">NoWay</span>,
+            <span class="k">OutlookReady</span>, <span class="k">Cue</span>, <span class="k">Moment</span>; timings
+            (<span class="k">SwapTime</span>, <span class="k">ShuffleTime</span> ...), <span class="k">PointerInput</span>,
+            <span class="k">KeyboardInput</span>, <span class="k">WarnDeadEnds</span>, <span class="k">OutlookBudget</span>,
+            <span class="k">CameraControls</span>, <span class="k">FollowPiece</span>.</td></tr>
+          <tr><td><span class="k">MatchBoardView</span></td><td><span class="k">Build(m)</span>, <span class="k">Show(state)</span>,
+            <span class="k">Sync(state)</span>, <span class="k">CellWorld(cell)</span>, <span class="k">CellAt(local)</span>,
+            <span class="k">FrameCamera(cam)</span>, <span class="k">FramePose(...)</span>, <span class="k">Triangles</span>.</td></tr>
+          <tr><td><span class="k">MatchHud</span>, <span class="k">MatchHub</span>, <span class="k">MatchDemo</span></td><td>The
+            HUD, the front screen, and the component that ties it all together.</td></tr>
+          <tr><td><span class="k">MatchBeeper</span>, <span class="k">MatchEffects</span></td><td>Sounds and effects for the
+            game's <span class="k">Cue</span> (<span class="k">MatchCue</span>: Pick, Swap, Bump, Match, BonusMade, Line,
+            Pattern, TypeClear, Land, Layer, Crate, Moss, Exit, Belt, Portal, Warn, Shuffle, Hint, NoWay, Rewind, Win, Lose)
+            and <span class="k">Moment</span> events.</td></tr>
+          <tr><td><span class="k">MatchEndless</span></td><td>The Endless recipes: <span class="k">Variants(mode)</span>,
+            <span class="k">Settings(mode, variant, stars, deal)</span>, <span class="k">MostStars</span>. Pure C#.</td></tr>
+        </table>
+      </div>
+
+
+      <div class="hero" id="demos">
+    <h1>Demos</h1>
+    <p class="tagline">A complete match-3 game built on the asset, made entirely in code.</p>
+      </div>
+
+      <p>The demo is a small, complete match-3 game built on the asset, so you can play what the generator makes and take
+        whatever you need from it. Everything in it is made in code: no prefabs, models, textures or audio files.</p>
+
+      <div class="section">
+        <h2 id="demos-scene">The demo scene</h2>
+        <p>Open <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play. The scene holds a
+          camera, a light and one <span class="k">MatchDemo</span> component with the four level packs in its slots. It needs
+          the Input System package (Active Input Handling set to <em>Input System Package</em> or <em>Both</em>) and Unity
+          UI.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-component">One component: MatchDemo</h2>
+        <p>Drop <span class="k">MatchDemo</span> in any scene with a camera and press Play. It builds the board and the game,
+          the HUD, the hub, the sounds and the effects, and lights the scene if it has no light. Its fields:</p>
+        <table>
+          <tr><th>Field</th><th>What it does</th></tr>
+          <tr><td><span class="k">Camera</span></td><td>The camera that shows the board (empty = the main camera).</td></tr>
+          <tr><td><span class="k">UiThroughCamera</span></td><td>Draw the HUD and the hub through the camera (Screen Space -
+            Camera) instead of over the screen.</td></tr>
+          <tr><td><span class="k">Pitch</span></td><td>How steeply the camera looks down to start with.</td></tr>
+          <tr><td><span class="k">HdrpLook</span></td><td>HDRP only: a small volume (fixed exposure, a gradient sky) so it
+            looks as it does in the other pipelines.</td></tr>
+          <tr><td><span class="k">ClearPack</span>, <span class="k">BonusPack</span>, <span class="k">GimmicksPack</span>,
+            <span class="k">RefillPack</span></td><td>The level packs (<span class="k">MatchPuzzlePack</span>) of the four
+            modes; empty = that mode's Level Pack tab says so.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-flow">The flow</h2>
+        <p>A welcome panel says what Simple Match is; <strong>Let's play</strong> goes on to four mode cards, each with a
+          picture of a real puzzle of its mode. A card opens its setup:</p>
+        <ul>
+          <li><strong>Endless</strong>: pick the kind and the difficulty (1 to 5 stars) and press Play. A brand new puzzle is
+            made to order on a background thread (on WebGL, which has no threads, straight away). <strong>New puzzle</strong>
+            on the win panel makes another to the same order.</li>
+          <li><strong>Level Pack</strong>: the mode's levels as numbered buttons, grey to do, the mode's colour solved, gold
+            solved on par. Play starts the first level not yet solved. The best moves per level are kept (in PlayerPrefs:
+            <span class="k">MatchPackProgress</span>), and the win panel says "Level complete!" or how you did against your
+            best. <strong>Next level</strong> goes on.</li>
+        </ul>
+        <p><strong>Menu</strong> or <strong>Esc</strong> goes back. The hub's <strong>Warnings</strong> button (or W in play)
+          turns the dead-end warning on or off, remembered between sessions.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-modes">The four modes</h2>
+        <table>
+          <tr><th>Mode</th><th>Kinds (Endless)</th></tr>
+          <tr><td><strong>Clear</strong></td><td>Square or shaped (a diamond, heart or ring) boards: clear every piece.</td></tr>
+          <tr><td><strong>Bonus Pieces</strong></td><td>Clear the board or collect, with bonus pieces (collect goes up to 4
+            stars).</td></tr>
+          <tr><td><strong>Gimmicks</strong></td><td>Layers, crates, fixed pieces, filters, moss, countdowns, exits or
+            belts.</td></tr>
+          <tr><td><strong>Refill</strong></td><td>Classic match-3 with new pieces dropping in: collect, clear layers, or bring
+            down the exit pieces that drop in.</td></tr>
+        </table>
+        <p>The recipes behind each kind and star count are in <span class="k">MatchEndless.Settings</span>, pure C#, and were
+          measured on 8 deals each: 72 of 74 land on their stars every time, and the other two (refill exit drops at 3 and 4
+          stars) land one star off in one deal of eight. Most puzzles are made in under 3 seconds; the slowest, refill exit
+          drops and layers at 4 stars, can take 10 to 30.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-packs">The level packs</h2>
+        <p>Four packs in <span class="k">Assets/SimpleMatch/Generated</span>, 48 levels in all: Clear 12, Bonus Pieces 10,
+          Gimmicks 16 (each gimmick twice, gently and then hard) and Refill 10. Each climbs from 1 star to 5, so nobody starts
+          on the hard ones. They were made from fixed seeds with the same Endless recipes, and every level was checked: valid,
+          re-verified unchanged, on its exact stars, everything asked for in it, and played through the game to par.</p>
+        <p>Make your own in the Match Generator window (<strong>Save &gt; Pack (all)</strong>) and drop it in a pack
+          slot.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-playing">Playing</h2>
+        <p>Tap a piece (it lifts over a white ring) and then a neighbour, or drag a piece onto a neighbour, to swap. A swap
+          that makes no match slides over and back; a piece that can't move wiggles. Every step of a move is shown: the swap,
+          the matches popping, pieces falling along their real paths (sideways with gravity, through portals), new pieces
+          sliding in, belts moving, a reshuffle lifting every moved piece to its own height so none passes through another.
+          After each step the board is put exactly where the rules say, so it never drifts.</p>
+        <table>
+          <tr><th>Key</th><th>Does</th></tr>
+          <tr><td>U, Backspace, Ctrl+Z</td><td>Undo the last move (also after a win or a loss)</td></tr>
+          <tr><td>R</td><td>Restart</td></tr>
+          <tr><td>H</td><td>A hint: a purple double arrow over the swap a fewest-move win makes</td></tr>
+          <tr><td>F</td><td>Auto-solve from here (from a dead end it restarts first); F or R stops it</td></tr>
+          <tr><td>W</td><td>The dead-end warning on or off</td></tr>
+          <tr><td>[ ], right-drag</td><td>Turn the view</td></tr>
+          <tr><td>Home, End, right-drag</td><td>Tilt</td></tr>
+          <tr><td>Wheel, + -</td><td>Zoom (zoomed in, the view follows the picked piece)</td></tr>
+          <tr><td>V</td><td>Reset the view</td></tr>
+          <tr><td>M</td><td>Sound on or off</td></tr>
+          <tr><td>Esc</td><td>Back to the hub</td></tr>
+        </table>
+        <p>The HUD shows the goal in words, how far along it is, the board, the difficulty, moves against the limit, and a
+          status line for a win, a loss, a refused swap's reason, or the dead-end warning ("This can't be won any more: it
+          needs more than the 3 moves left. Undo or restart."). That warning comes from asking
+          <span class="k">MatchSolver.Outlook</span> after every move, on a background thread, so play never waits for it.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-sound">Sounds and effects</h2>
+        <p><span class="k">MatchBeeper</span> synthesizes every sound in code: a pop with a note for each match, one step up
+          the chord for each wave of a cascade, a sparkle for a bonus piece made, a blast for each kind of bonus clear, a knock
+          or a crack for a crate, a tick-tock for a countdown on its last move, and tunes for the win and the loss.
+          <span class="k">MatchEffects</span> throws small lit cubes for each moment (no particle shaders, so they look the same
+          in every pipeline): bursts in a piece's colour, a streak along a line clear, splinters, confetti. Both just listen to
+          the game's <span class="k">Cue</span> and <span class="k">Moment</span> events.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-pipelines">Render pipelines</h2>
+        <p>The demo makes its materials from the active pipeline's default lit shader, so it works in URP, HDRP and the
+          Built-in pipeline (checked in all three: every material on the pipeline's lit shader, none pink, the pictures the
+          same). A shader that only code uses would be stripped from a build, so <span class="k">MatchLookKeeper</span>
+          writes <span class="k">Runtime/Demo/Resources/SimpleMatchLook.mat</span> before every build, a plain material with
+          that shader, so the build keeps it. It changes no project settings, and you can delete the material: the next
+          build writes it again. On HDRP, <span class="k">DemoHdrp</span> adds a small volume so it looks the same.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demos-own">Using the pieces yourself</h2>
+        <p>Each part works on its own:</p>
+        <table>
+          <tr><th>Component</th><th>What it gives you</th></tr>
+          <tr><td><span class="k">MatchBoardView</span></td><td>Builds any <span class="k">MatchData</span> in 3D:
+            <span class="k">Build(puzzle)</span>, <span class="k">Show(state)</span> / <span class="k">Sync(state)</span>,
+            <span class="k">CellWorld(cell)</span>, <span class="k">CellAt(point)</span>, <span class="k">FramePose</span> for
+            the camera.</td></tr>
+          <tr><td><span class="k">MatchGame</span></td><td>Plays it on that view: <span class="k">Begin(puzzle)</span>,
+            <span class="k">Swap(a, b)</span>, <span class="k">Tap</span>, <span class="k">Drag</span>,
+            <span class="k">Undo</span>, <span class="k">Restart</span>, <span class="k">ShowHint</span>,
+            <span class="k">StartAutoSolve</span>; events <span class="k">Step</span>, <span class="k">Moved</span>,
+            <span class="k">Won</span>, <span class="k">Lost</span>, <span class="k">NoWay</span>,
+            <span class="k">Cue</span>, <span class="k">Moment</span>; <span class="k">PointerInput</span> /
+            <span class="k">KeyboardInput</span> off to drive it yourself, <span class="k">CameraControls</span> on to let it
+            frame the board.</td></tr>
+          <tr><td><span class="k">MatchHud</span>, <span class="k">MatchHub</span></td><td>The in-game HUD (with
+            <span class="k">FreeAreas</span> for the camera) and the front screen, built in code with uGUI.</td></tr>
+          <tr><td><span class="k">MatchBeeper</span>, <span class="k">MatchEffects</span></td><td>Hook them to
+            <span class="k">Cue</span> and <span class="k">Moment</span>.</td></tr>
+          <tr><td><span class="k">MatchPieces</span>, <span class="k">MatchGimmicks</span></td><td>The meshes of every piece
+            and gimmick, if you want them in your own scene.</td></tr>
+        </table>
+<pre><code>// a board and a game on any GameObject, no hub, no HUD
+var go = new GameObject("Match");
+go.AddComponent&lt;MatchBoardView&gt;();
+var game = go.AddComponent&lt;MatchGame&gt;();
+game.CameraControls = true;
+game.Won += g =&gt; Debug.Log($"won in {g.Moves}");
+game.Lost += why =&gt; Debug.Log("lost: " + why);
+game.Begin(puzzle);</code></pre>
+      </div>
+
+
+      <div class="hero" id="troubleshooting">
+    <h1>Troubleshooting</h1>
+    <p class="tagline">What the notes mean, and what to do when something isn't as expected.</p>
+      </div>
+
+
+      <div class="section">
+        <h2 id="troubleshooting-notes">Reading the notes</h2>
+        <p>Whenever the generator can't give you exactly what you asked for, it writes a note on the puzzle instead of
+          quietly giving you less. The analysis pane shows every note, and so does <span class="k">MatchData.Notes</span>
+          from code. <span class="k">MatchAudit.MeetsRequest(puzzle)</span> tells you whether a puzzle got everything its
+          settings asked for and <span class="k">MatchAudit.Missing(puzzle)</span> lists what it missed. In the window,
+          <strong>Only on target</strong> hides the puzzles that missed something, and <strong>Save &gt; Pack (on target
+          only)</strong> leaves them out of a pack.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-closest">"No puzzle met the settings in 20 tries (...): this is the closest"</h2>
+        <p>No seed gave a puzzle that met every hard requirement: solvable, the par proven and inside your par window, on your
+          star target, with the bonus pieces needed if you asked for that. The note lists what it was looking for. Try, in
+          this order:</p>
+        <ul>
+          <li><strong>Auto</strong>, which fixes settings that fight each other and says what it changed;</li>
+          <li>more <strong>Max attempts</strong> under Advanced, so more seeds are tried;</li>
+          <li>a wider par window, or a board that can hold the par you want (a built puzzle's par is at most its Lines minus
+            1);</li>
+          <li>one star more or less (see below).</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-stars">The stars aren't the ones asked for</h2>
+        <p>The stars come from how often a player swapping at random (on refill levels, a half-greedy player) wins within the
+          move limit. Some settings can't reach every star:</p>
+        <ul>
+          <li><strong>Small boards</strong> make easy puzzles. Measured on the presets: 5 x 5 with 3 shapes rates 1 to 3
+            stars (mostly 2), 6 x 6 with 4 shapes 1 to 4, and 7 x 7 with 4 shapes mostly 4 to 5. For 4 or 5 stars use a
+            bigger board, more lines or more shapes, or a gimmick that makes puzzles harder (spreading, countdowns with no
+            slack, belts).</li>
+          <li><strong>Moves to spare</strong> make a puzzle easier, so its stars drop: on collect goals and refill levels
+            this setting decides much of the difficulty.</li>
+          <li><strong>Collect on bonus boards</strong> is easy once bonus pieces fly: it rates up to about 4 stars.</li>
+          <li><strong>Fixed pieces and type filters</strong> raise the par but can make a random player win slightly more
+            often (fewer pieces to swap wrongly), so they can lower the stars.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-room">Fewer gimmicks than asked</h2>
+        <p>Every gimmick is placed only where the known win still works, and kept only when it changes the puzzle. When there
+          is no such place, the puzzle gets fewer (or none) and a note says why, for example "Breakables: no cell that stays
+          empty is next to a match of this puzzle's swaps, so it has none. A taller board leaves more room above the pieces".
+          What helps:</p>
+        <ul>
+          <li><strong>Crates, moss, exit pieces</strong> need empty room above the pieces: a taller board, fewer lines, or
+            Fit off. They are for clear-all puzzles without bonus pieces (exit pieces also for ExitAll); a dealt bonus board is
+            full, so it has none.</li>
+          <li><strong>Spreading</strong> keeps 3 to 4 cells at most; GenerateVerified tries more seeds when a puzzle got
+            none.</li>
+          <li><strong>Refill levels</strong> switch off crates, fixed pieces, filters, moss, countdowns, exit pieces and
+            belts.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-budget">"The solver's state budget ran out"</h2>
+        <p>The solver searched as many positions as <strong>State budget</strong> (under Advanced) allows without finishing.
+          The generator never accepts such a puzzle as proven; it tries another seed. Raise the budget, or make the puzzle
+          smaller: fewer lines (up to 12 are proven in under 0.3 s), fewer shapes on a bonus board, or a smaller board.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-slow">Generation feels slow</h2>
+        <p>Measured times for one puzzle, proof and odds included: built puzzles up to 12 lines well under a second, 13 to 15
+          lines 1 to 10 s; bonus boards 6 x 6 up to about 1 s, 7 x 7 with 5 shapes 1 to 3 s, 7 x 7 with 4 shapes about 14 s;
+          refill levels mostly a few seconds, large or hard ones 10 to 30 s. A star target multiplies that by the seeds it
+          takes to hit.</p>
+        <p>Generation runs on a background thread, so the editor stays usable. Set <strong>Time limit (s)</strong> and a
+          puzzle that takes longer is listed as not made, and Cancel stops at once. For bonus boards, 5 shapes are faster than
+          4 (more shapes, fewer matches to search).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-unknown">The warning says nothing on a refill level</h2>
+        <p>The dead-end warning asks <span class="k">MatchSolver.Outlook</span>, which searches up to
+          <span class="k">MatchGame.OutlookBudget</span> positions (200,000), then once more ten times as far. On a big refill
+          level it can still run out and answer <em>Unknown</em>, and the demo then says nothing rather than guess. It is never
+          wrong, only sometimes silent. Raise the budget for more answers at the cost of more time on a worker thread.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-handmade">A hand-made board is refused</h2>
+        <p><span class="k">MatchRules.Validate(puzzle, out error)</span> says why in words. The usual causes:</p>
+        <ul>
+          <li>a piece floating over an empty cell (every piece must rest on the bottom, a blocked cell, a crate or another
+            piece);</li>
+          <li>a line of three already on the board at the start;</li>
+          <li>an array of the wrong length (each gimmick array has one entry per cell), or a type outside 0 to Types - 1;</li>
+          <li>row 0 is the <strong>bottom</strong> row: a board typed top row first comes out upside down.</li>
+        </ul>
+        <p>Then <span class="k">MatchAudit.Verify</span> solves it and stamps its par, odds and stars.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-input">The demo ignores taps or keys</h2>
+        <ul>
+          <li>The demo reads the <strong>Input System</strong> package: set Project Settings &gt; Player &gt; Active Input
+            Handling to <em>Input System Package</em> or <em>Both</em>.</li>
+          <li>The HUD and hub make an EventSystem with the Input System's UI module when the scene has none. If your scene has
+            one with the old <span class="k">StandaloneInputModule</span>, swap it for
+            <span class="k">InputSystemUIInputModule</span>.</li>
+          <li>Taps are ignored while a move is still playing out and over the HUD's buttons.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-pink">Pink or dark in a pipeline</h2>
+        <ul>
+          <li><strong>Pink in a build</strong>: the demo makes its materials in code, and a build strips shaders that only
+            code uses. Before every build, <span class="k">MatchLookKeeper</span> writes
+            <span class="k">Runtime/Demo/Resources/SimpleMatchLook.mat</span> with the active pipeline's lit shader, so the
+            build keeps it. If you see pink, check that file exists after a build (deleting it is fine: the next build writes
+            it again).</li>
+          <li><strong>Dark or tinted in HDRP</strong>: out of the box HDRP uses physical light units, automatic exposure and
+            sky lighting. <span class="k">MatchDemo.HdrpLook</span> (on by default) adds a global volume at priority 10 with a
+            fixed exposure and a gradient sky, and sets the sun in lux, so the demo looks the same as on the other pipelines.
+            Turn it off to let your own volumes and lights take over.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-progress">Resetting the demo's progress</h2>
+        <p>The demo saves each pack level's best moves in PlayerPrefs, under
+          <span class="k">SimpleMatch.Demo.Best.&lt;pack name&gt;.&lt;level&gt;</span>, and the warning toggle under
+          <span class="k">SimpleMatch.Demo.WarnDeadEnds</span>. Call
+          <span class="k">MatchPackProgress.Clear(packName, count)</span> to forget a pack, or delete those keys. A pack's
+          progress is filed under its pack name, so renaming a pack starts it fresh.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-seeds">Seeds and versions</h2>
+        <p>The same settings and seed always give the same puzzle within a version of Simple Match. A future version that
+          improves the generator may change what a seed produces. Saved assets store the puzzle itself, not just its seed, so
+          your saved puzzles and packs never change. Verified generation stores the seed that actually worked, such as
+          <span class="k">level-1#2</span>, so copying a puzzle's own seed always rebuilds that exact puzzle. Refill levels
+          store their stream's seed too, so they drop the same pieces every time.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-console">Console messages</h2>
+        <ul>
+          <li><strong>"[Simple Match] Documentation page not found"</strong>: the documentation menu looks for these pages in
+            a folder whose path contains SimpleMatch and Documentation. Keep the Documentation folder inside the Simple Match
+            folder.</li>
+          <li><strong>"[Simple Match] Generation failed"</strong>: something went wrong on the window's generation thread.
+            Please send the message with your settings and seed.</li>
+          <li><strong>"[Simple Match] Kept ... in the build for the demo"</strong>: the build step wrote the look material,
+            which is expected after you switch render pipelines.</li>
+          <li><strong>"[Simple Match] No lit shader found for the active render pipeline"</strong>: the pipeline asset has no
+            default material, so the demo may draw pink in a build. Give the pipeline asset a default material.</li>
+          <li><strong>"[Simple Match] Exported 12 files from ..."</strong>: a pack's pictures were written, as asked.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="troubleshooting-ask">Still stuck</h2>
+        <p>Email <strong>livingfailuregames@gmail.com</strong> with your Unity version, the puzzle's seed and settings (the
+          window's Copy button copies the seed), and the notes it shows. A seed rebuilds the puzzle exactly, so that is
+          usually all it takes to see what you see.</p>
+      </div>
+
+
+      <div class="hero" id="about">
+    <h1>About</h1>
+    <p class="tagline">Who made it, what's inside, and the principles it was built on.</p>
+      </div>
+
+
+      <div class="section">
+        <h2 id="about-about">About Simple Match</h2>
+        <p>Simple Match is a match-3 puzzle generator for Unity, made by <strong>Living Failure</strong>. It builds puzzles
+          to clear the board, collect pieces, peel layers off or bring exit pieces down, with bonus pieces and combos, crates,
+          fixed pieces, type filters, spreading moss, countdowns, conveyor belts, and refill levels where new pieces drop in
+          from a seeded stream. Then it solves each puzzle exactly, stamps it with its proven par and a 1 to 5 star difficulty,
+          and stores it as a ScriptableObject or exports it as a picture. A complete 3D demo with 48 levels, built entirely in
+          code, is included, and it can tell the player when a level can't be won any more.</p>
+        <p class="muted">Version 1.0, made and tested with Unity 6000.6 in URP, HDRP and the Built-in pipeline.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="about-inside">What's in the package</h2>
+        <table>
+          <tr><th>Folder</th><th>What it holds</th></tr>
+          <tr><td><code>Runtime</code></td><td>The core (generation, the puzzle data, the play rules, the solver, pictures
+            and the ScriptableObjects) and, in <code>Runtime/Demo</code>, the 3D demo.</td></tr>
+          <tr><td><code>Editor</code></td><td>The Match Generator window, the inspectors, the documentation menu and the
+            build step that keeps the demo's shader.</td></tr>
+          <tr><td><code>Scenes</code></td><td>The demo scene.</td></tr>
+          <tr><td><code>Generated</code></td><td>The demo's four level packs.</td></tr>
+          <tr><td><code>Documentation</code></td><td>These pages, which open offline from <strong>Window &gt; Living
+            Failure &gt; Simple Match &gt; Documentation</strong>.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="about-design">Design principles</h2>
+        <ul>
+          <li><strong>Solve exactly.</strong> The par, the number of best solutions and the odds come from searching every
+            position a puzzle can reach, not from an estimate. A search that runs out of budget is never passed off as
+            proven.</li>
+          <li><strong>Measure, then promise.</strong> The star bands, the presets, Auto's fixes, every gimmick's placement
+            rule and the demo's difficulty recipes all come from measuring real puzzles, hundreds at a time, and the docs say
+            so where it matters.</li>
+          <li><strong>Be honest.</strong> When a request can't be met, the puzzle's notes say so. Nothing is quietly
+            downgraded, and the store page claims nothing the solver can't back up.</li>
+          <li><strong>Every gimmick matters.</strong> A crate, filter, belt or countdown goes only where the puzzle really
+            uses it and its win still works. Gimmicks that measured as doing nothing, or as handing out shortcuts, were left
+            out of the generator (portals and gravity are in the rules, for you to place by hand).</li>
+          <li><strong>One set of rules.</strong> The generator, the solver and the play rules your game uses all resolve a
+            swap the same way, wave by wave, so your game and the par always agree.</li>
+          <li><strong>Not by colour alone.</strong> Every piece type and every gimmick has its own shape as well as its own
+            colour, in the pictures and in the demo, so colour-blind players can play every puzzle.</li>
+          <li><strong>No bloat.</strong> The core has no package dependencies, and the demo and the editor tools live in
+            their own assemblies. The demo needs no prefabs, models, textures or audio files.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2 id="about-more">More from Living Failure</h2>
+        <p><strong>Simple Conveyor:</strong> conveyor belt puzzles where belts carry a piece until it rests on a stop tile,
+          with ice, switches that turn belts, gems and holes, each solved exactly and rated.</p>
+        <p><strong>Simple Ice Slide:</strong> sliding ice puzzles where the piece slides until something stops it, with
+          Hazards, Arrows, pickups, cracked tiles and portals on square or shaped boards, each solved exactly and
+          rated.</p>
+        <p><strong>Simple Tumble:</strong> rolling cube puzzles where the right face has to land on the goal, with keys and
+          doors, switches and gates, turntables, crumbling tiles and portals, each solved exactly and rated.</p>
+        <p><strong>Simple Color Sort:</strong> ball sort and water sort puzzles with up to 15 colours, locked tubes and
+          hidden pieces, each solved exactly and rated for difficulty and traps.</p>
+        <p><strong>Simple Maze:</strong> mazes on square, hex, triangle and circular grids, with keys and doors, switches,
+          gems, portals, rolling players and up to 8 floors, each solved exactly and rated.</p>
+        <p><strong>Simple Klotski:</strong> sliding-block puzzles in five modes (Gridlock, Klotski, Clear, Clear 3D and
+          Clear Snakes), each board solved exactly and stamped with its proven par.</p>
+        <p><strong>Simple States:</strong> switch-and-state logic puzzles in four modes: Classic combinations, Ordered
+          chains with traps, Lights Out with paintable pattern goals, and the three-state Trilight grid.</p>
+        <p><strong>Simple Connect:</strong> a connection-puzzle toolkit where you draw the pairs (square and hex), rotate
+          the pipes, or rotate a whole network back together.</p>
+        <p><strong>Simple Hamiltonian:</strong> a cover-all, single-path puzzle generator (square and hex), where the
+          solution is one unbroken line that visits every tile once.</p>
+        <p class="muted">All on the Unity Asset Store.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="about-support">Support</h2>
+        <p>Questions, bugs and ideas are welcome at
+          <a href="mailto:livingfailuregames@gmail.com">livingfailuregames@gmail.com</a>. Please include your Unity version
+          and, for anything about a particular puzzle, its seed and settings, since a seed rebuilds the puzzle exactly.
+          Corrections to these pages are welcome too.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="about-license">License</h2>
+        <p>Distributed under the Unity Asset Store End User License Agreement. Use it in your games and tools, but don't
+          resell or redistribute the source as an asset.</p>
+      </div>
+
+
+    </main>
+  </div>
+
+  <div class="footer">
+    <p>Simple Match by Living Failure. <a href="#about">About and support</a></p>
+  </div>
+
+</div>
+</body>
+</html>

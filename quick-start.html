@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Start - Simple Match</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="quick-start.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html#quick-start" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="quick-start.html" class="active">Quick Start</a></li>
+    <li><a href="generating.html">Generating</a></li>
+    <li><a href="api-reference.html">API Reference</a></li>
+    <li><a href="demos.html">Demos</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>Quick Start</h1>
+    <p class="tagline">From the window to a playable level in a few minutes.</p>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#window">1. The generator window</a></li>
+        <li><a href="#generate">2. Generate a puzzle</a></li>
+        <li><a href="#read">3. Read the result</a></li>
+        <li><a href="#save">4. Save it</a></li>
+        <li><a href="#code">5. From code</a></li>
+        <li><a href="#play">6. Play it</a></li>
+        <li><a href="#demo">7. The demo</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+      <p>Five minutes from opening the window to a saved, proven puzzle, and the code to make and play one yourself.</p>
+
+      <div class="section">
+        <h2 id="window">1. The generator window</h2>
+        <p>Open <strong>Window &gt; Living Failure &gt; Simple Match &gt; Match Generator</strong>. The settings are on the
+          left, and the puzzles you generate appear on the right, each with its picture, its par, its stars and anything the
+          generator wants you to know. Warnings under the settings say when two of them fight each other.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="generate">2. Generate a puzzle</h2>
+        <p>Press <strong>Presets</strong> and pick one, for example <em>Gimmicks/Breakables</em> (a 7 x 7 board with crates
+          to break). Press <strong>Generate</strong>. The puzzle is built and solved on a background thread, with a progress
+          bar, <strong>Cancel</strong>, and a time limit (<em>Time limit (s)</em>) so a hard request can never hang the
+          editor.</p>
+        <div class="callout tip"><p>Not sure two settings go together? Press <strong>Auto</strong>: it keeps what you asked
+          for and changes whatever fights it, and tells you what it changed and why.</p></div>
+        <p>Set <em>Batch count</em> above 1 to make several at once; <em>Seed</em> makes a puzzle you can make again (the same
+          settings and seed always give the same puzzle), and <em>Random</em> picks a fresh one.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="read">3. Read the result</h2>
+        <p>Select a puzzle on the right to see it large. The pane under the picture says, in words:</p>
+        <ul>
+          <li><strong>the goal</strong> ("clear the board in 6 moves"), the board and its gimmicks;</li>
+          <li><strong>par</strong>, the proven fewest moves, and the <strong>move limit</strong> (par plus <em>Moves to
+            spare</em>);</li>
+          <li><strong>stars</strong>, 1 to 5, and how many best wins there are;</li>
+          <li>every move of the solution, step by step (<em>Show swaps</em>, the arrows), with what each move did;</li>
+          <li><strong>notes</strong>: anything that couldn't be met exactly ("asked 4 stars, got 3") and what you got
+            instead.</li>
+        </ul>
+        <p>Hover a cell for what is on it. <em>Copy seed</em> and <em>Copy solution</em> copy them as text.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="save">4. Save it</h2>
+        <p>Press <strong>Save</strong>:</p>
+        <ul>
+          <li><strong>Current</strong> saves the selected puzzle as a <span class="k">MatchPuzzleAsset</span>;</li>
+          <li><strong>Pack (all)</strong> saves the whole set as a <span class="k">MatchPuzzlePack</span>, or <strong>Pack (on
+            target only)</strong> just the ones that met every request;</li>
+          <li><strong>Pictures of the set</strong> writes a PNG or SVG of each puzzle and its answer key.</li>
+        </ul>
+        <p>Select a saved asset to see the same picture and pane in its Inspector, with <strong>Verify</strong> (re-solve it
+          and check nothing changed) and <strong>Re-roll</strong> (a new seed, the same settings).</p>
+      </div>
+
+      <div class="section">
+        <h2 id="code">5. From code</h2>
+        <p>Everything the window does is one call away. Make a puzzle from a preset (or your own
+          <span class="k">MatchSettings</span>):</p>
+<pre><code>using SimpleMatch;
+using UnityEngine;
+
+var settings = MatchPresets.Find("Gimmicks/Breakables").Make();
+settings.Seed = "level-1";                       // the same seed, the same puzzle
+MatchData puzzle = MatchGenerator.GenerateVerified(settings);
+
+Debug.Log($"{MatchNarration.GoalSentence(puzzle)}: par {puzzle.Par}, {puzzle.Difficulty} stars");
+foreach (var note in puzzle.Notes) Debug.Log(note);   // anything not met exactly</code></pre>
+        <p>A saved asset gives you the same <span class="k">MatchData</span>:</p>
+<pre><code>public MatchPuzzleAsset level;      // assign in the Inspector
+MatchData puzzle = level.Puzzle;
+MatchData third = myPack.Get(2);    // a MatchPuzzlePack</code></pre>
+      </div>
+
+      <div class="section">
+        <h2 id="play">6. Play it</h2>
+        <p>The rules work on a <span class="k">MatchBoard</span> (what never changes) and a <span class="k">MatchState</span>
+          (the position). Each move returns a report of everything it did, wave by wave:</p>
+<pre><code>MatchBoard board = puzzle.Board();
+MatchState state = puzzle.Start();
+int moves = 0;
+
+// a swap of two neighbouring cells (cell = y * Width + x, row 0 at the bottom)
+var (a, b) = puzzle.SolutionMoves()[0];
+if (MatchRules.TrySwap(board, state, a, b, out MoveReport report, out string why))
+{
+    moves++;
+    Debug.Log($"cleared {report.Cleared} pieces in {report.Steps.Count} waves");
+}
+else Debug.Log("refused: " + why);           // "the swap makes no match", ...
+
+// can it still be won from here, and how?
+MatchOutlook outlook = MatchSolver.Outlook(puzzle, state, moves);
+if (outlook.Kind == OutlookKind.CanWin) Debug.Log($"{outlook.MovesNeeded} more, hint {outlook.Hint}");
+if (outlook.Kind == OutlookKind.CannotWin) Debug.Log("no way to win: " + outlook.Why);</code></pre>
+        <p>Every function is described in the <a href="api-reference.html">API Reference</a>; how the settings shape a puzzle
+          is in <a href="generating.html">Generating</a>.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="demo">7. The demo</h2>
+        <p>Open <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play. Pick a mode, then
+          Endless (a new puzzle made to order) or a level of its pack. Tap a piece and then a neighbour (or drag it) to swap.
+          <strong>U</strong> undoes, <strong>R</strong> restarts, <strong>H</strong> shows a hint, <strong>F</strong>
+          solves. The <a href="demos.html">Demos</a> page shows how it is built, so you can take what you need.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>

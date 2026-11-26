@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demos - Simple Match</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="format-selector" id="top">
+    <span class="format-label">View:</span>
+    <a href="demos.html" class="format-link active">Multi-Page</a>
+    <a href="single-page.html#demos" class="format-link">Single Page</a>
+  </div>
+
+  <nav class="navbar"><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="quick-start.html">Quick Start</a></li>
+    <li><a href="generating.html">Generating</a></li>
+    <li><a href="api-reference.html">API Reference</a></li>
+    <li><a href="demos.html" class="active">Demos</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul></nav>
+
+  <div class="hero">
+    <h1>Demos</h1>
+    <p class="tagline">A complete match-3 game built on the asset, made entirely in code.</p>
+  </div>
+
+  <div class="page-layout">
+    <aside class="toc">
+      <h3>On this page</h3>
+      <ul>
+        <li><a href="#scene">The demo scene</a></li>
+        <li><a href="#component">One component: MatchDemo</a></li>
+        <li><a href="#flow">The flow</a></li>
+        <li><a href="#modes">The four modes</a></li>
+        <li><a href="#packs">The level packs</a></li>
+        <li><a href="#playing">Playing</a></li>
+        <li><a href="#sound">Sounds and effects</a></li>
+        <li><a href="#pipelines">Render pipelines</a></li>
+        <li><a href="#own">Using the pieces yourself</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+      <p>The demo is a small, complete match-3 game built on the asset, so you can play what the generator makes and take
+        whatever you need from it. Everything in it is made in code: no prefabs, models, textures or audio files.</p>
+
+      <div class="section">
+        <h2 id="scene">The demo scene</h2>
+        <p>Open <span class="k">Assets/SimpleMatch/Scenes/SimpleMatchDemo.unity</span> and press Play. The scene holds a
+          camera, a light and one <span class="k">MatchDemo</span> component with the four level packs in its slots. It needs
+          the Input System package (Active Input Handling set to <em>Input System Package</em> or <em>Both</em>) and Unity
+          UI.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="component">One component: MatchDemo</h2>
+        <p>Drop <span class="k">MatchDemo</span> in any scene with a camera and press Play. It builds the board and the game,
+          the HUD, the hub, the sounds and the effects, and lights the scene if it has no light. Its fields:</p>
+        <table>
+          <tr><th>Field</th><th>What it does</th></tr>
+          <tr><td><span class="k">Camera</span></td><td>The camera that shows the board (empty = the main camera).</td></tr>
+          <tr><td><span class="k">UiThroughCamera</span></td><td>Draw the HUD and the hub through the camera (Screen Space -
+            Camera) instead of over the screen.</td></tr>
+          <tr><td><span class="k">Pitch</span></td><td>How steeply the camera looks down to start with.</td></tr>
+          <tr><td><span class="k">HdrpLook</span></td><td>HDRP only: a small volume (fixed exposure, a gradient sky) so it
+            looks as it does in the other pipelines.</td></tr>
+          <tr><td><span class="k">ClearPack</span>, <span class="k">BonusPack</span>, <span class="k">GimmicksPack</span>,
+            <span class="k">RefillPack</span></td><td>The level packs (<span class="k">MatchPuzzlePack</span>) of the four
+            modes; empty = that mode's Level Pack tab says so.</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="flow">The flow</h2>
+        <p>A welcome panel says what Simple Match is; <strong>Let's play</strong> goes on to four mode cards, each with a
+          picture of a real puzzle of its mode. A card opens its setup:</p>
+        <ul>
+          <li><strong>Endless</strong>: pick the kind and the difficulty (1 to 5 stars) and press Play. A brand new puzzle is
+            made to order on a background thread (on WebGL, which has no threads, straight away). <strong>New puzzle</strong>
+            on the win panel makes another to the same order.</li>
+          <li><strong>Level Pack</strong>: the mode's levels as numbered buttons, grey to do, the mode's colour solved, gold
+            solved on par. Play starts the first level not yet solved. The best moves per level are kept (in PlayerPrefs:
+            <span class="k">MatchPackProgress</span>), and the win panel says "Level complete!" or how you did against your
+            best. <strong>Next level</strong> goes on.</li>
+        </ul>
+        <p><strong>Menu</strong> or <strong>Esc</strong> goes back. The hub's <strong>Warnings</strong> button (or W in play)
+          turns the dead-end warning on or off, remembered between sessions.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="modes">The four modes</h2>
+        <table>
+          <tr><th>Mode</th><th>Kinds (Endless)</th></tr>
+          <tr><td><strong>Clear</strong></td><td>Square or shaped (a diamond, heart or ring) boards: clear every piece.</td></tr>
+          <tr><td><strong>Bonus Pieces</strong></td><td>Clear the board or collect, with bonus pieces (collect goes up to 4
+            stars).</td></tr>
+          <tr><td><strong>Gimmicks</strong></td><td>Layers, crates, fixed pieces, filters, moss, countdowns, exits or
+            belts.</td></tr>
+          <tr><td><strong>Refill</strong></td><td>Classic match-3 with new pieces dropping in: collect, clear layers, or bring
+            down the exit pieces that drop in.</td></tr>
+        </table>
+        <p>The recipes behind each kind and star count are in <span class="k">MatchEndless.Settings</span>, pure C#, and were
+          measured on 8 deals each: 72 of 74 land on their stars every time, and the other two (refill exit drops at 3 and 4
+          stars) land one star off in one deal of eight. Most puzzles are made in under 3 seconds; the slowest, refill exit
+          drops and layers at 4 stars, can take 10 to 30.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="packs">The level packs</h2>
+        <p>Four packs in <span class="k">Assets/SimpleMatch/Generated</span>, 48 levels in all: Clear 12, Bonus Pieces 10,
+          Gimmicks 16 (each gimmick twice, gently and then hard) and Refill 10. Each climbs from 1 star to 5, so nobody starts
+          on the hard ones. They were made from fixed seeds with the same Endless recipes, and every level was checked: valid,
+          re-verified unchanged, on its exact stars, everything asked for in it, and played through the game to par.</p>
+        <p>Make your own in the Match Generator window (<strong>Save &gt; Pack (all)</strong>) and drop it in a pack
+          slot.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="playing">Playing</h2>
+        <p>Tap a piece (it lifts over a white ring) and then a neighbour, or drag a piece onto a neighbour, to swap. A swap
+          that makes no match slides over and back; a piece that can't move wiggles. Every step of a move is shown: the swap,
+          the matches popping, pieces falling along their real paths (sideways with gravity, through portals), new pieces
+          sliding in, belts moving, a reshuffle lifting every moved piece to its own height so none passes through another.
+          After each step the board is put exactly where the rules say, so it never drifts.</p>
+        <table>
+          <tr><th>Key</th><th>Does</th></tr>
+          <tr><td>U, Backspace, Ctrl+Z</td><td>Undo the last move (also after a win or a loss)</td></tr>
+          <tr><td>R</td><td>Restart</td></tr>
+          <tr><td>H</td><td>A hint: a purple double arrow over the swap a fewest-move win makes</td></tr>
+          <tr><td>F</td><td>Auto-solve from here (from a dead end it restarts first); F or R stops it</td></tr>
+          <tr><td>W</td><td>The dead-end warning on or off</td></tr>
+          <tr><td>[ ], right-drag</td><td>Turn the view</td></tr>
+          <tr><td>Home, End, right-drag</td><td>Tilt</td></tr>
+          <tr><td>Wheel, + -</td><td>Zoom (zoomed in, the view follows the picked piece)</td></tr>
+          <tr><td>V</td><td>Reset the view</td></tr>
+          <tr><td>M</td><td>Sound on or off</td></tr>
+          <tr><td>Esc</td><td>Back to the hub</td></tr>
+        </table>
+        <p>The HUD shows the goal in words, how far along it is, the board, the difficulty, moves against the limit, and a
+          status line for a win, a loss, a refused swap's reason, or the dead-end warning ("This can't be won any more: it
+          needs more than the 3 moves left. Undo or restart."). That warning comes from asking
+          <span class="k">MatchSolver.Outlook</span> after every move, on a background thread, so play never waits for it.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="sound">Sounds and effects</h2>
+        <p><span class="k">MatchBeeper</span> synthesizes every sound in code: a pop with a note for each match, one step up
+          the chord for each wave of a cascade, a sparkle for a bonus piece made, a blast for each kind of bonus clear, a knock
+          or a crack for a crate, a tick-tock for a countdown on its last move, and tunes for the win and the loss.
+          <span class="k">MatchEffects</span> throws small lit cubes for each moment (no particle shaders, so they look the same
+          in every pipeline): bursts in a piece's colour, a streak along a line clear, splinters, confetti. Both just listen to
+          the game's <span class="k">Cue</span> and <span class="k">Moment</span> events.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="pipelines">Render pipelines</h2>
+        <p>The demo makes its materials from the active pipeline's default lit shader, so it works in URP, HDRP and the
+          Built-in pipeline (checked in all three: every material on the pipeline's lit shader, none pink, the pictures the
+          same). A shader that only code uses would be stripped from a build, so <span class="k">MatchLookKeeper</span>
+          writes <span class="k">Runtime/Demo/Resources/SimpleMatchLook.mat</span> before every build, a plain material with
+          that shader, so the build keeps it. It changes no project settings, and you can delete the material: the next
+          build writes it again. On HDRP, <span class="k">DemoHdrp</span> adds a small volume so it looks the same.</p>
+      </div>
+
+      <div class="section">
+        <h2 id="own">Using the pieces yourself</h2>
+        <p>Each part works on its own:</p>
+        <table>
+          <tr><th>Component</th><th>What it gives you</th></tr>
+          <tr><td><span class="k">MatchBoardView</span></td><td>Builds any <span class="k">MatchData</span> in 3D:
+            <span class="k">Build(puzzle)</span>, <span class="k">Show(state)</span> / <span class="k">Sync(state)</span>,
+            <span class="k">CellWorld(cell)</span>, <span class="k">CellAt(point)</span>, <span class="k">FramePose</span> for
+            the camera.</td></tr>
+          <tr><td><span class="k">MatchGame</span></td><td>Plays it on that view: <span class="k">Begin(puzzle)</span>,
+            <span class="k">Swap(a, b)</span>, <span class="k">Tap</span>, <span class="k">Drag</span>,
+            <span class="k">Undo</span>, <span class="k">Restart</span>, <span class="k">ShowHint</span>,
+            <span class="k">StartAutoSolve</span>; events <span class="k">Step</span>, <span class="k">Moved</span>,
+            <span class="k">Won</span>, <span class="k">Lost</span>, <span class="k">NoWay</span>,
+            <span class="k">Cue</span>, <span class="k">Moment</span>; <span class="k">PointerInput</span> /
+            <span class="k">KeyboardInput</span> off to drive it yourself, <span class="k">CameraControls</span> on to let it
+            frame the board.</td></tr>
+          <tr><td><span class="k">MatchHud</span>, <span class="k">MatchHub</span></td><td>The in-game HUD (with
+            <span class="k">FreeAreas</span> for the camera) and the front screen, built in code with uGUI.</td></tr>
+          <tr><td><span class="k">MatchBeeper</span>, <span class="k">MatchEffects</span></td><td>Hook them to
+            <span class="k">Cue</span> and <span class="k">Moment</span>.</td></tr>
+          <tr><td><span class="k">MatchPieces</span>, <span class="k">MatchGimmicks</span></td><td>The meshes of every piece
+            and gimmick, if you want them in your own scene.</td></tr>
+        </table>
+<pre><code>// a board and a game on any GameObject, no hub, no HUD
+var go = new GameObject("Match");
+go.AddComponent&lt;MatchBoardView&gt;();
+var game = go.AddComponent&lt;MatchGame&gt;();
+game.CameraControls = true;
+game.Won += g =&gt; Debug.Log($"won in {g.Moves}");
+game.Lost += why =&gt; Debug.Log("lost: " + why);
+game.Begin(puzzle);</code></pre>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="footer">Simple Match by Living Failure. <a href="#top">Back to top</a></div>
+</div>
+</body>
+</html>
